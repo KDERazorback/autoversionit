@@ -1,0 +1,18 @@
+{
+  "source": "file|env|git",
+  "targets": [
+    "file",
+    "env",
+    "git"
+  ],
+  "strategy": "simple|rc",
+  "patch": [
+    "netfx",
+    "netcore",
+    "nuspec",
+    "text"
+  ],
+  "bumpMethod": "major|minor|build|revision",
+  "versionFile": "version.txt",
+  "versionEnv": "VERSION"
+}

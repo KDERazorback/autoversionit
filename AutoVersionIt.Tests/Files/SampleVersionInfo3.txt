@@ -1,0 +1,6 @@
+# this is a comment
+// This is another comment
+// This is commented:
+//Version=2.3.4.5
+
+  vErSiOn =         1

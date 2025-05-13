@@ -1,0 +1,6 @@
+﻿{
+  CanonicalPart: 1.2.3.4,
+  DynamicSuffix: 5,
+  FixedSuffix: rc,
+  IsPrerelease: true
+}

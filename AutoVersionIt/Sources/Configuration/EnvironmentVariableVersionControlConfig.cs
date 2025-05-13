@@ -1,0 +1,3 @@
+namespace AutoVersionIt.Sources.Configuration;
+
+public record EnvironmentVariableVersionControlConfig(string EnvironmentVariableName);

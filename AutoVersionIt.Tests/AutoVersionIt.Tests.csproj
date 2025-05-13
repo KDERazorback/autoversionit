@@ -1,0 +1,84 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="6.0.4">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+        <PackageReference Include="Moq" Version="4.20.72" />
+        <PackageReference Include="Verify.Xunit" Version="30.0.0" />
+        <PackageReference Include="xunit" Version="2.9.3" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.0">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\AutoVersionIt\AutoVersionIt.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Files\SampleVersionInfo1.txt">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Files\SampleVersionInfo2.txt">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Files\SampleVersionInfo3.txt">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Files\SampleVersionInfo4.txt">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Files\SampleNuget2.nuspec">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Files\SampleNuget1.nuspec">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Remove="Files\SampleNetFxProj3\**" />
+      <None Remove="Files\SampleNetFxProj4\**" />
+      <None Remove="Files\SampleNetFxProj2\**" />
+      <None Remove="Files\SampleNetFxProj\**" />
+      <None Remove="Files\SampleNetCoreProj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Files\SampleNetFxProj2\Properties\AssemblyInfo.cs">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Compile>
+      <Compile Update="Files\SampleNetFxProj\Properties\AssemblyInfo.cs">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Compile>
+      <Compile Remove="Files\SampleNetFxProj3\**" />
+      <Compile Remove="Files\SampleNetFxProj4\**" />
+      <Compile Remove="Files\SampleNetFxProj2\**" />
+      <Compile Remove="Files\SampleNetFxProj\**" />
+      <Compile Include="Files\SampleNetCoreProj\SampleNetCoreProj.csproj" />
+      <Compile Remove="Files\SampleNetCoreProj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="Files\SampleNetFxProj3\**" />
+      <EmbeddedResource Remove="Files\SampleNetFxProj4\**" />
+      <EmbeddedResource Remove="Files\SampleNetFxProj2\**" />
+      <EmbeddedResource Remove="Files\SampleNetFxProj\**" />
+      <EmbeddedResource Remove="Files\SampleNetCoreProj\**" />
+    </ItemGroup>
+
+</Project>
