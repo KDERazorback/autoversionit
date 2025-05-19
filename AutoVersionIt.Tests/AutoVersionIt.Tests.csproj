@@ -51,34 +51,5 @@
       <None Update="Files\SampleNuget1.nuspec">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Remove="Files\SampleNetFxProj3\**" />
-      <None Remove="Files\SampleNetFxProj4\**" />
-      <None Remove="Files\SampleNetFxProj2\**" />
-      <None Remove="Files\SampleNetFxProj\**" />
-      <None Remove="Files\SampleNetCoreProj\**" />
     </ItemGroup>
-
-    <ItemGroup>
-      <Compile Update="Files\SampleNetFxProj2\Properties\AssemblyInfo.cs">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Compile>
-      <Compile Update="Files\SampleNetFxProj\Properties\AssemblyInfo.cs">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Compile>
-      <Compile Remove="Files\SampleNetFxProj3\**" />
-      <Compile Remove="Files\SampleNetFxProj4\**" />
-      <Compile Remove="Files\SampleNetFxProj2\**" />
-      <Compile Remove="Files\SampleNetFxProj\**" />
-      <Compile Include="Files\SampleNetCoreProj\SampleNetCoreProj.csproj" />
-      <Compile Remove="Files\SampleNetCoreProj\**" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <EmbeddedResource Remove="Files\SampleNetFxProj3\**" />
-      <EmbeddedResource Remove="Files\SampleNetFxProj4\**" />
-      <EmbeddedResource Remove="Files\SampleNetFxProj2\**" />
-      <EmbeddedResource Remove="Files\SampleNetFxProj\**" />
-      <EmbeddedResource Remove="Files\SampleNetCoreProj\**" />
-    </ItemGroup>
-
 </Project>

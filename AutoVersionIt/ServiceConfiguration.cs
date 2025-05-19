@@ -1,3 +1,4 @@
+using AutoVersionIt.Interop;
 using AutoVersionIt.Patches;
 using AutoVersionIt.Sources;
 using AutoVersionIt.Sources.Configuration;
@@ -15,19 +16,25 @@ public static class ServiceConfiguration
         { "env", typeof(EnvironmentVariableVersionControl) },
         { "git", typeof(GitTagVersionControl) }
     };
-    private static readonly Dictionary<string, Type> AvailableStrategies = new()
-    {
-        { "simple", typeof(SimpleCanonicalVersioning) },
-        { "rc", typeof(ReleaseCandidateVersioning) },
-    };
     private static readonly Dictionary<string, Type> AvailableTargets = new()
+    {
+        { "file", typeof(FileBasedSimpleVersionControl) },
+        { "env", typeof(EnvironmentVariableVersionControl) },
+        { "git", typeof(GitTagVersionControl) }
+    };
+    private static readonly Dictionary<string, Type> AvailablePatchers = new()
     {
         { "netfx", typeof(NetFxVersionPatcher) },
         { "netcore", typeof(NetCoreVersionPatcher) },
         { "nuspec", typeof(NuspecVersionPatcher) },
         { "text", typeof(TextFilePatcher) }
     };
-    
+    private static readonly Dictionary<string, Type> AvailableStrategies = new()
+    {
+        { "simple", typeof(SimpleCanonicalVersioning) },
+        { "rc", typeof(ReleaseCandidateVersioning) },
+    };
+
     public static IServiceCollection ConfigureServices(this IServiceCollection services, IConfiguration configuration)
     {
         var source = configuration.GetValue("source", string.Empty);
@@ -41,6 +48,9 @@ public static class ServiceConfiguration
             .ToList()
             .Distinct(StringComparer.OrdinalIgnoreCase);
 
+        AddVersionReader(configuration, services);
+        AddChildProcessFactory(configuration, services);
+        
         AddConfigurations(configuration, services);
         AddSourceByName(source, services);
         AddStrategyByName(strategy, services);
@@ -60,12 +70,30 @@ public static class ServiceConfiguration
         return services;
     }
 
+    private static void AddVersionReader(IConfiguration configuration, IServiceCollection services)
+    {
+        var suffix = configuration.GetValue("suffix", string.Empty);
+
+        var reader = new VersionReader()
+            .ThrowIfEmpty();
+
+        if (!string.IsNullOrWhiteSpace(suffix))
+            reader.WithDefaultFixedSuffix(suffix.Trim());
+        
+        services.AddSingleton(reader);
+    }
+
+    private static void AddChildProcessFactory(IConfiguration configuration, IServiceCollection services)
+    {
+        services.AddSingleton<IChildProcessFactory, SimpleShellProcessFactory>();
+    }
+
     private static void AddSourceByName(string source, IServiceCollection services)
     {
         if (!AvailableSources.TryGetValue(source, out var sourceType))
             throw new InvalidOperationException($"Unknown source '{source}' specified in config file.");
         
-        services.AddSingleton(sourceType);
+        services.AddSingleton(typeof(IVersionSource), sourceType);
     }
     
     private static void AddStrategyByName(string strategy, IServiceCollection services)
@@ -73,7 +101,7 @@ public static class ServiceConfiguration
         if (!AvailableStrategies.TryGetValue(strategy, out var strategyType))
             throw new InvalidOperationException($"Unknown strategy '{strategy}' specified in config file.");
         
-        services.AddSingleton(strategyType);
+        services.AddSingleton(typeof(IVersioningStrategy), strategyType);
     }
     
     private static void AddTargetByName(string target, IServiceCollection services)
@@ -81,15 +109,15 @@ public static class ServiceConfiguration
         if (!AvailableTargets.TryGetValue(target, out var targetType))
             throw new InvalidOperationException($"Unknown target '{target}' specified in config file.");
         
-        services.AddSingleton(targetType);
+        services.AddSingleton(typeof(IVersionTarget), targetType);
     }
     
     private static void AddPatcherByName(string patcher, IServiceCollection services)
     {
-        if (!AvailableTargets.TryGetValue(patcher, out var patcherType))
+        if (!AvailablePatchers.TryGetValue(patcher, out var patcherType))
             throw new InvalidOperationException($"Unknown patcher '{patcher}' specified in config file.");
         
-        services.AddSingleton(patcherType);
+        services.AddSingleton(typeof(IVersionPatcher), patcherType);
     }
 
     private static void AddConfigurations(IConfiguration configuration, IServiceCollection services)
@@ -97,7 +125,7 @@ public static class ServiceConfiguration
         var versionEnv = configuration.GetValue("versionEnv", "VERSION");
         var versionFile = configuration.GetValue("versionFile", "version.txt");
         
-        services.AddSingleton(() => new EnvironmentVariableVersionControlConfig(versionEnv));
-        services.AddSingleton(() => new FileBasedSimpleVersionControlConfig(versionFile));
+        services.AddSingleton(typeof(EnvironmentVariableVersionControlConfig), new EnvironmentVariableVersionControlConfig(versionEnv));
+        services.AddSingleton(typeof(FileBasedSimpleVersionControlConfig), new FileBasedSimpleVersionControlConfig(versionFile));
     }
 }

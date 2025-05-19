@@ -14,6 +14,7 @@ public class GitTagVersionControl : IVersionSource, IVersionTarget
     protected ILogger? Logger { get; set; }
     protected VersionReader VersionReader { get; set; }
     protected IChildProcessFactory ChildProcessFactory { get; }
+    public bool ShouldIncludeMergeCommits { get; protected set; } = true;
 
     public GitTagVersionControl(VersionReader reader, IChildProcessFactory factory, ILogger? logger = null)
     {
@@ -24,7 +25,21 @@ public class GitTagVersionControl : IVersionSource, IVersionTarget
     
     public VersionInformation GetCurrentVersion()
     {
-        var git = GitCallSuccess("describe --tags --first-parent --match \"[0-9]*\" --abbrev=0 HEAD");
+        var args = new List<string>()
+        {
+            "describe",
+            "--tags",
+            "--match",
+            "\"[0-9]*\"",
+            "--abbrev=0",
+        };
+        
+        if (!ShouldIncludeMergeCommits)
+            args.Add("--first-parent");
+        
+        args.Add("HEAD");
+        
+        var git = GitCallSuccess(string.Join(" ", args));
         var output = git.StdOut().ReadToEnd();
         
         if (string.IsNullOrWhiteSpace(output))
@@ -118,5 +133,19 @@ public class GitTagVersionControl : IVersionSource, IVersionTarget
             .WithArguments(arguments)
             .InBackground()
             .Run();
+    }
+
+    public GitTagVersionControl IncludeMergeCommits()
+    {
+        ShouldIncludeMergeCommits = true;
+
+        return this;
+    }
+
+    public GitTagVersionControl OnlyDirectCommits()
+    {
+        ShouldIncludeMergeCommits = false;
+
+        return this;
     }
 }

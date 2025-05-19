@@ -2,13 +2,18 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 
 var minimumLogLevel = LogLevel.Information;
 if (args.Contains("-v", StringComparer.Ordinal)) minimumLogLevel = LogLevel.Debug;
 
 var loggerFactory = LoggerFactory.Create(builder =>
 {
-    builder.AddConsole();
+    builder.AddSimpleConsole(x =>
+    {
+        x.ColorBehavior = LoggerColorBehavior.Default;
+        x.IncludeScopes = true;
+    });
     builder.SetMinimumLevel(minimumLogLevel);
 });
 
@@ -18,7 +23,7 @@ var configuration = new ConfigurationBuilder()
     .Build();
     
 var services = new ServiceCollection()
-    .AddSingleton(configuration)
+    .AddSingleton<IConfiguration>(configuration)
     .AddSingleton(loggerFactory)
     .ConfigureServices(configuration)
     .BuildServiceProvider();

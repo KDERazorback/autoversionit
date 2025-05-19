@@ -67,9 +67,6 @@ public class VersionReader
             if (i + 1 < suffix.Length)
                 dynamicPart = suffix.Substring(i + 1);
         }
-        
-        if (string.IsNullOrWhiteSpace(fixedPart))
-            fixedPart = DefaultFixedSuffix;
 
         var major = versionParts[0].Trim();
         var minor = versionParts.Length > 1 ? versionParts[1].Trim() : "0";

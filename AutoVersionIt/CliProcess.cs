@@ -50,10 +50,10 @@ public class CliProcess
                 return x.GetType().Name;
             return x.Name;
         }));
-        if (string.IsNullOrWhiteSpace(targetNames)) targetNames = "None";
+        if (string.IsNullOrWhiteSpace(patcherNames)) patcherNames = "None";
         
         Logger?.LogInformation("AutoVersionIT CLI process started.");
-        Logger?.LogInformation("Arguments: {args}", string.Join(" ", Arguments));
+        Logger?.LogInformation("Arguments: {args}", Arguments.Any() ? string.Join(" ", Arguments) : "None");
         Logger?.LogInformation("\t--> Version source     : {source}", VersionSource.Name);
         Logger?.LogInformation("\t--> Version targets    : {targets}", targetNames);
         Logger?.LogInformation("\t--> Version patchers   : {patchers}", patcherNames);

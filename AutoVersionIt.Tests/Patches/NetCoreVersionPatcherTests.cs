@@ -253,9 +253,44 @@ public class NetCoreVersionPatcherTests
         var testDir = PrepareTestDirectory();
         var sampleCsProj = Path.Combine(testDir, "SampleNetCoreProj.csproj");
         var sampleVbProj = Path.Combine(testDir, "SampleNetCoreProj.vbproj");
+
+        var sample1 = @"<Project Sdk=""Microsoft.NET.Sdk"">
+
+    <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <InformationalVersion>1.2.3.4</InformationalVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+    <PackageReference Include=""Microsoft.Extensions.FileSystemGlobbing"" Version=""9.0.4"" />
+    <PackageReference Include=""Microsoft.Extensions.Logging.Console"" Version=""9.0.4"" />
+    </ItemGroup>
+
+</Project>";
         
-        File.Copy(Path.Combine(SampleNetCoreDir, "SampleNetCoreProj.csproj"), sampleCsProj);
-        File.Copy(Path.Combine(SampleNetCoreDir, "SampleNetCoreProj.vbproj"), sampleVbProj);
+        var sample2 = @"<Project Sdk=""Microsoft.NET.Sdk"">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include=""Microsoft.Extensions.FileSystemGlobbing"" Version=""9.0.4"" />
+        <PackageReference Include=""Microsoft.Extensions.Logging.Console"" Version=""9.0.4"" />
+    </ItemGroup>
+
+</Project>";
+        
+        File.WriteAllText(sampleCsProj, sample1);
+        File.WriteAllText(sampleVbProj, sample2);
         
         var version = new VersionInformation 
         { 

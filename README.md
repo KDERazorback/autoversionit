@@ -3,7 +3,7 @@
 ## Summary
 AutoVersionIt is a little cross-platform tool for automatic versioning that supports reading and updating version information on various sources and destinations.
 It offers a flexible approach to managing version numbers on CI/CD pipelines by allowing you to specify which Versioning strategy to use.
-It is designed to be simple to use. Everything is configured in a JSON file that can be easily committed to your repository.
+It is designed to be straightforward to use. Everything is configured in a JSON file that can be easily committed to your repository.
 And can also be used to automatically update the version information in your various repository files.
 
 ## Motivation
@@ -46,8 +46,9 @@ AutoVersionIt is built on .NET 8.0 and depends only on a few NuGet packages and 
 To build AutoVersionIt, you need to have the .NET 8.0 SDK installed. If you are here, you know how to do it.
 - Then build the application with the following command:
 ```shell
-  dotnet build -c Release
+  dotnet publish ./AutoVersionIt/AutoVersionIt.csproj -c Release -r linux-x64 -o ./app
 ```
+> In case you are building for windows, change `linux-x64` to `win-x64`
 
 ## Configuration
 Everything in AutoVersionIt is defined in a configuration file, and the application is designed to run from it without requiring additional parameters.
@@ -58,8 +59,8 @@ running it from the same root of your repository.
 
 A sample configuration file is provided (`autoversion.sample.json`) to help you get started.
 
-### Configuration quick-grabs
-To update your project's version information from the last tag in your repository by branch, and commit the new tag as well:
+### Configuration quick grabs
+To update your project's version information from the last tag in your repository by branch and commit the new tag as well:
 - Save the following file as `autoversion.json` in the root of your repository:
 ```json
 {
@@ -106,7 +107,7 @@ To update your project's version information from the last tag in your repositor
   each time the tool is run.
 - Set the environment variable `ENVIRONMENT` to `staging` and run the tool as usual to increase the build number of your version by one and reset the revision each time.
 - Set the environment variable to `production` and run the tool again to increase the minor number and reset the build and revision.
-- When doing a major release, just manually tag the commit with the new version number on the development branch, and the tool will keep start all over from revision 0.
+- When doing a major release, manually tag the commit with the new version number on the development branch, and the tool will keep start all over from revision 0.
 - Add your first tag and AutoVersionIt will take care of the rest.
 
 ### Alternatives
@@ -133,7 +134,7 @@ To update your project's version information from the last tag in your repositor
 AutoVersionIt is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Contributing
-Contributions to AutoVersionIt are welcome! I'm open to any changes. Just make a pull request and wait a few days for a review.
+Contributions to AutoVersionIt are welcome! I'm open to any changes. Make a pull request and wait a few days for a review.
 Here are some ways you can contribute:
 
 - Bug reports and feature requests via issues
