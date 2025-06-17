@@ -99,7 +99,12 @@ cd ..
 
 mkdir "${PUBLISHDIR}"
 cp "${WINDIR}/AutoVersionIt.exe" "${PUBLISHDIR}"
+cp "${WINDIR}/AutoVersionIt.exe.md5" "${PUBLISHDIR}"
+cp "${WINDIR}/AutoVersionIt.exe.sha1" "${PUBLISHDIR}"
 cp "${LINUXDIR}/AutoVersionIt" "${PUBLISHDIR}"
+cp "${LINUXDIR}/AutoVersionIt.md5" "${PUBLISHDIR}"
+cp "${LINUXDIR}/AutoVersionIt.sha1" "${PUBLISHDIR}"
+
 
 cp -r ${WINDIR}/*.zip* "${PUBLISHDIR}"
 cp -r ${LINUXDIR}/*.tar.gz* "${PUBLISHDIR}"
