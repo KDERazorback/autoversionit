@@ -1,11 +1,19 @@
 using System.Xml;
 using AutoVersionIt.Patches;
+using AutoVersionIt.Patches.Configuration;
 
 namespace AutoVersionIt.Tests.Patches;
 
 public class NuspecVersionPatcherTests
 {
     private const string TestFilesDir = "Files";
+    
+    private NuspecVersionPatcherConfig _defaultConfig = new NuspecVersionPatcherConfig()
+        .PatchNuspecFiles()
+        .InsertAttributesIfMissing()
+        .EnableGlobber()
+        .Recursive()
+        .DetectFileKindByExtension() as NuspecVersionPatcherConfig ?? throw new InvalidOperationException();
     
     private string PrepareTestDirectory()
     {
@@ -18,14 +26,14 @@ public class NuspecVersionPatcherTests
     public void Constructor_WithNullPath_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new NuspecVersionPatcher(null!));
+        Assert.Throws<ArgumentNullException>(() => new NuspecVersionPatcher(null!, new NuspecVersionPatcherConfig()));
     }
     
     [Fact]
     public void Constructor_WithEmptyPath_ThrowsException()
     {
         // Arrange, Act & Assert
-        Assert.Throws<ArgumentException>(() => new NuspecVersionPatcher(""));
+        Assert.Throws<ArgumentException>(() => new NuspecVersionPatcher("", _defaultConfig));
     }
     
     [Fact]
@@ -35,11 +43,11 @@ public class NuspecVersionPatcherTests
         var tempPath = Path.GetTempPath();
         
         // Act
-        var patcher = new NuspecVersionPatcher(tempPath);
+        var patcher = new NuspecVersionPatcher(tempPath, _defaultConfig);
         
         // Assert
-        Assert.Single(patcher.Filters);
-        Assert.Equal("**/*.nuspec", patcher.Filters[0]);
+        Assert.Single(patcher.Config.Filters);
+        Assert.Equal("**/*.nuspec", patcher.Config.Filters[0]);
     }
     
     [Fact]
@@ -51,7 +59,7 @@ public class NuspecVersionPatcherTests
         File.Copy(Path.Combine(TestFilesDir, "SampleNuget1.nuspec"), sampleFile, true);
         
         var version = new VersionInformation { CanonicalPart = new Version(2, 1, 0, 0) };
-        var patcher = new NuspecVersionPatcher(testDir);
+        var patcher = new NuspecVersionPatcher(testDir, _defaultConfig);
         
         // Act
         patcher.Patch(version);
@@ -82,8 +90,10 @@ public class NuspecVersionPatcherTests
             CanonicalPart = new Version(3, 0, 1, 0),
             FixedSuffix = "beta"
         };
-        var patcher = new NuspecVersionPatcher(testDir)
+        var config = new NuspecVersionPatcherConfig()
+            .PatchNuspecFiles()
             .InsertAttributesIfMissing();
+        var patcher = new NuspecVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -95,7 +105,7 @@ public class NuspecVersionPatcherTests
         nsmgr.AddNamespace("nuspec", "http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd");
         var versionNode = doc.SelectSingleNode("/nuspec:package/nuspec:metadata/nuspec:version", nsmgr);
         Assert.NotNull(versionNode);
-        Assert.Equal("3.0.1.0-beta", versionNode!.InnerText);
+        Assert.Equal("3.0.1.0-beta", versionNode.InnerText);
         
         // Cleanup
         Directory.Delete(testDir, true);
@@ -110,8 +120,9 @@ public class NuspecVersionPatcherTests
         File.Copy(Path.Combine(TestFilesDir, "SampleNuget2.nuspec"), sampleFile, true);
         
         var version = new VersionInformation { CanonicalPart = new Version(4, 2, 0, 0) };
-        var patcher = new NuspecVersionPatcher(testDir)
+        var config = new NuspecVersionPatcherConfig()
             .IgnoreMissingAttributes();
+        var patcher = new NuspecVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -144,7 +155,7 @@ public class NuspecVersionPatcherTests
             FixedSuffix = "preview",
             DynamicSuffix = "001"
         };
-        var patcher = new NuspecVersionPatcher(testDir);
+        var patcher = new NuspecVersionPatcher(testDir, _defaultConfig);
         
         // Act
         patcher.Patch(version);
@@ -156,7 +167,7 @@ public class NuspecVersionPatcherTests
         nsmgr.AddNamespace("nuspec", "http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd");
         var versionNode = doc.SelectSingleNode("/nuspec:package/nuspec:metadata/nuspec:version", nsmgr);
         Assert.NotNull(versionNode);
-        Assert.Equal("7.0.0.0-preview001", versionNode!.InnerText);
+        Assert.Equal("7.0.0.0-preview001", versionNode.InnerText);
         
         // Cleanup
         Directory.Delete(testDir, true);
@@ -176,9 +187,11 @@ public class NuspecVersionPatcherTests
         File.Copy(Path.Combine(TestFilesDir, "SampleNuget1.nuspec"), sampleFile2, true);
         
         var version = new VersionInformation { CanonicalPart = new Version(8, 0, 0, 0) };
-        var patcher = new NuspecVersionPatcher(testDir)
+        var config = new NuspecVersionPatcherConfig()
+            .PatchNuspecFiles()
             .DisableGlobber()
-            .NonRecursive();
+            .NonRecursive() as NuspecVersionPatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new NuspecVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -197,7 +210,7 @@ public class NuspecVersionPatcherTests
         doc2.Load(sampleFile2);
         nsmgr = new XmlNamespaceManager(doc2.NameTable);
         nsmgr.AddNamespace("nuspec", "http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd");
-        var versionNode2 = doc2.SelectSingleNode("/nuspec:package/nuspec:metadata/nuspec:version", nsmgr);;
+        var versionNode2 = doc2.SelectSingleNode("/nuspec:package/nuspec:metadata/nuspec:version", nsmgr);
         Assert.Equal("1.0.0-rc1", versionNode2!.InnerText);
         
         // Cleanup
@@ -218,7 +231,10 @@ public class NuspecVersionPatcherTests
         File.Copy(Path.Combine(TestFilesDir, "SampleNuget1.nuspec"), sampleFile2, true);
         
         var version = new VersionInformation { CanonicalPart = new Version(9, 0, 0, 0) };
-        var patcher = new NuspecVersionPatcher(testDir).Recursive();
+        var config = new NuspecVersionPatcherConfig()
+            .PatchNuspecFiles()
+            .Recursive() as NuspecVersionPatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new NuspecVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);

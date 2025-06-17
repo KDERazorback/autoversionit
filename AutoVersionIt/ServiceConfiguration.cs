@@ -1,5 +1,6 @@
 using AutoVersionIt.Interop;
 using AutoVersionIt.Patches;
+using AutoVersionIt.Patches.Configuration;
 using AutoVersionIt.Sources;
 using AutoVersionIt.Sources.Configuration;
 using AutoVersionIt.Strategies;
@@ -44,7 +45,7 @@ public static class ServiceConfiguration
         var targets = configuration.GetSection("targets").GetChildren().Select(x => x.Get<string>())
             .ToList()
             .Distinct(StringComparer.OrdinalIgnoreCase);
-        var patchers = configuration.GetSection("patchers").GetChildren().Select(x => x.Get<string>())
+        var patchers = configuration.GetSection("patch").GetChildren().Select(x => x.Get<string>())
             .ToList()
             .Distinct(StringComparer.OrdinalIgnoreCase);
 
@@ -127,5 +128,34 @@ public static class ServiceConfiguration
         
         services.AddSingleton(typeof(EnvironmentVariableVersionControlConfig), new EnvironmentVariableVersionControlConfig(versionEnv));
         services.AddSingleton(typeof(FileBasedSimpleVersionControlConfig), new FileBasedSimpleVersionControlConfig(versionFile));
+
+        services.AddSingleton(typeof(NetCoreVersionPatcherConfig), new NetCoreVersionPatcherConfig()
+            .InsertAttributesIfMissing()
+            .PatchCSharpProjects()
+            .PatchVbProjects()
+            .Recursive()
+            .DetectFileKindByExtension()
+            .EnableGlobber());
+        
+        services.AddSingleton(typeof(NetFxVersionPatcherConfig), new NetFxVersionPatcherConfig()
+            .InsertAttributesIfMissing()
+            .PatchCSharpProjects()
+            .PatchVbProjects()
+            .CheckUsingStatements()
+            .Recursive()
+            .DetectFileKindByExtension()
+            .EnableGlobber());
+        
+        services.AddSingleton(typeof(NuspecVersionPatcherConfig), new NuspecVersionPatcherConfig()
+            .PatchNuspecFiles()
+            .InsertAttributesIfMissing()
+            .Recursive()
+            .DetectFileKindByExtension()
+            .EnableGlobber());
+        
+        services.AddSingleton(typeof(TextFilePatcherConfig), new TextFilePatcherConfig()
+            .Recursive()
+            .DetectFileKindByExtension()
+            .EnableGlobber());
     }
 }

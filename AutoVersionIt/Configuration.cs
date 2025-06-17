@@ -16,7 +16,8 @@ public static class Configuration
             configName = string.Format("autoversion.{0}.json", environmentName.Trim().ToLowerInvariant());
         }
         
-        config.AddJsonFile(configName, optional: false, reloadOnChange: false);
+        var configPath = Path.Combine(Directory.GetCurrentDirectory(), configName);
+        config.AddJsonFile(configPath, optional: false, reloadOnChange: false);
 
         return config;
     }

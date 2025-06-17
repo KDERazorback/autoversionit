@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
+using AutoVersionIt.Patches.Configuration;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.Extensions.Logging;
 
@@ -9,22 +10,20 @@ namespace AutoVersionIt.Patches;
 public abstract class VersionPatcherBase : IVersionPatcher
 {
     public abstract string Name { get; }
-    protected VersionPatcherBase(DirectoryInfo sourceDirectory)
+    protected VersionPatcherBase(VersionPatcherConfig config, DirectoryInfo sourceDirectory)
     {
         SourceDirectory = sourceDirectory;
+        Config = config;
     }
 
     protected ILogger? Logger { get; init; }
     public DirectoryInfo SourceDirectory { get; init; }
-    protected IList<string> FilterList { get; init; } = new List<string>();
-    public IReadOnlyList<string> Filters => FilterList.AsReadOnly();
-    public bool ShouldRecurse { get; protected set; } = true;
-    public bool ShouldUseGlobber { get; protected set; } = true;
-    protected Func<FileInfo, FileDataKind>? FileKindDetectionFunc { get; set; } = null;
+    public VersionPatcherConfig Config { get; }
+    
     public void Patch(VersionInformation versionInformation)
     {
         IList<FileInfo> files;
-        if (ShouldUseGlobber)
+        if (Config.ShouldUseGlobber)
             files = GetFilesToPatch_Globber();
         else
             files = GetFilesToPatch_Simple();
@@ -42,9 +41,9 @@ public abstract class VersionPatcherBase : IVersionPatcher
     {
         List<FileInfo> filesToPatch = new List<FileInfo>();
         
-        foreach (var filter in FilterList)
+        foreach (var filter in Config.Filters)
         {
-            var files = SourceDirectory.GetFiles(filter, ShouldRecurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);;
+            var files = SourceDirectory.GetFiles(filter, Config.ShouldRecurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);;
             filesToPatch.AddRange(files);
         }
         
@@ -53,10 +52,10 @@ public abstract class VersionPatcherBase : IVersionPatcher
 
     protected IList<FileInfo> GetFilesToPatch_Globber()
     {
-        if (!ShouldRecurse) throw new NotSupportedException("Cannot disable recursive search when using globber. Use the simple search instead."); 
+        if (!Config.ShouldRecurse) throw new NotSupportedException("Cannot disable recursive search when using globber. Use the simple search instead."); 
         var matcher = new Matcher();
-        matcher.AddIncludePatterns(FilterList);
-        var results = matcher.GetResultsInFullPath(SourceDirectory.FullName);;
+        matcher.AddIncludePatterns(Config.Filters);
+        var results = matcher.GetResultsInFullPath(SourceDirectory.FullName);
 
         var list = (from x in results select new FileInfo(x)).ToList();
 
@@ -107,19 +106,6 @@ public abstract class VersionPatcherBase : IVersionPatcher
         return replacements;
     }
 
-    public FileDataKind GetFileDataKindByExtension(FileInfo file)
-    {
-        if (string.Equals(file.Extension, ".cs", StringComparison.OrdinalIgnoreCase)) return FileDataKind.CSharp;
-        if (string.Equals(file.Extension, ".vb", StringComparison.OrdinalIgnoreCase)) return FileDataKind.Vb;
-        if (string.Equals(file.Extension, ".cpp", StringComparison.OrdinalIgnoreCase)) return FileDataKind.Cpp;
-        if (string.Equals(file.Extension, ".txt", StringComparison.OrdinalIgnoreCase)) return FileDataKind.Text;
-        if (string.Equals(file.Extension, ".nuspec", StringComparison.OrdinalIgnoreCase)) return FileDataKind.NuSpec;
-        if (string.Equals(file.Extension, ".csproj", StringComparison.OrdinalIgnoreCase)) return FileDataKind.CSharpProject;
-        if (string.Equals(file.Extension, ".vbproj", StringComparison.OrdinalIgnoreCase)) return FileDataKind.VbProject;
-        
-        throw new NotSupportedException($"File extension {file.Extension} is not supported.");
-    }
-    
     protected void AppendOrUpdateXmlNode(XmlDocument doc, string path, string value)
     {
         var pathSegments = path.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

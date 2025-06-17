@@ -40,7 +40,9 @@ public class ReleaseCandidateVersioning : VersioningStrategyBase
     public override VersionInformation Increment(VersionInformation versionInformation, VersionBumpType versionBumpType)
     {
         if (versionBumpType == VersionBumpType.None) return versionInformation;
-        var dynamicSuffix = int.Parse(versionInformation.DynamicSuffix, NumberStyles.Integer);
+        var dynamicSuffix = 0;
+        if (!string.IsNullOrWhiteSpace(versionInformation.DynamicSuffix))
+            dynamicSuffix = int.Parse(versionInformation.DynamicSuffix, NumberStyles.Integer);
 
         switch (versionBumpType)
         {

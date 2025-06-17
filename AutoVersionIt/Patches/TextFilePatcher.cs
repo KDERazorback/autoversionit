@@ -1,4 +1,5 @@
 using System.Text;
+using AutoVersionIt.Patches.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace AutoVersionIt.Patches;
@@ -10,11 +11,22 @@ public class TextFilePatcher : VersionPatcherBase
     /// diagnostic purposes.
     /// </summary>
     public override string Name => "Text File Patcher";
-    public TextFilePatcher(string path, ILogger? logger = null)
-        :base(new DirectoryInfo(path))
+    
+    public new TextFilePatcherConfig Config { get; }
+    
+    public TextFilePatcher(TextFilePatcherConfig config, ILogger? logger = null)
+        :base(config, new DirectoryInfo(Directory.GetCurrentDirectory()))
     {
         Logger = logger;
+        Config = config;
+    }
+    
+    public TextFilePatcher(string path, TextFilePatcherConfig config, ILogger? logger = null)
+        :base(config, new DirectoryInfo(path))
+    {
         if (string.IsNullOrWhiteSpace(path)) throw new ArgumentNullException(nameof(path));
+        Logger = logger;
+        Config = config;
     }
 
     protected override void PatchFile(FileInfo file, VersionInformation version)
@@ -24,8 +36,8 @@ public class TextFilePatcher : VersionPatcherBase
             Logger?.LogWarning(" --> File {file} does not exist. Skipping.", file.FullName);
             return;
         }
-        
-        var fileKind = FileKindDetectionFunc?.Invoke(file) ?? GetFileDataKindByExtension(file);
+
+        var fileKind = Config.DetectFileKind(file);
         Logger?.LogDebug("--> Detected file kind {fileKind} for file {file}", fileKind, file.FullName);
 
         switch (fileKind)
@@ -67,65 +79,5 @@ public class TextFilePatcher : VersionPatcherBase
         
         writer.Flush();
         fs.Flush();
-    }
-    
-    public TextFilePatcher WithFilter(string filter)
-    {
-        if (string.IsNullOrWhiteSpace(filter)) throw new ArgumentNullException(nameof(filter));
-        FilterList.Add(filter);
-
-        return this;
-    }
-
-    public TextFilePatcher WithFilters(IEnumerable<string> filters)
-    {
-        foreach (var filter in filters)
-            WithFilter(filter);
-        
-        return this;
-    }
-
-    public TextFilePatcher ClearFilters()
-    {
-        FilterList.Clear();
-        return this;
-    }
-
-    public TextFilePatcher Recursive()
-    {
-        ShouldRecurse = true;
-
-        return this;
-    }
-
-    public TextFilePatcher NonRecursive()
-    {
-        ShouldRecurse = false;
-        
-        return this;
-    }
-
-    public TextFilePatcher EnableGlobber()
-    {
-        ShouldUseGlobber = true;
-        return this;
-    }
-
-    public TextFilePatcher DisableGlobber()
-    {
-        ShouldUseGlobber = false;
-        return this;
-    }
-
-    public TextFilePatcher DetectFileKindByExtension()
-    {
-        FileKindDetectionFunc = GetFileDataKindByExtension;
-        return this;
-    }
-
-    public TextFilePatcher DetectFileKindWithFunc(Func<FileInfo, FileDataKind> func)
-    {
-        FileKindDetectionFunc = func;
-        return this;
     }
 }

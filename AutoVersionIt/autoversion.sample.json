@@ -12,7 +12,7 @@
     "nuspec",
     "text"
   ],
-  "bumpMethod": "major|minor|build|revision",
+  "bumpMethod": "major|minor|build|revision|suffix",
   "versionFile": "version.txt",
   "versionEnv": "VERSION",
   "suffix": "rc"

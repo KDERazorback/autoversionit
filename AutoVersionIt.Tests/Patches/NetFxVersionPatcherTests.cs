@@ -1,11 +1,17 @@
-using System.Text.RegularExpressions;
 using AutoVersionIt.Patches;
+using AutoVersionIt.Patches.Configuration;
 
 namespace AutoVersionIt.Tests.Patches;
 
 public class NetFxVersionPatcherTests
 {
-    private const string TestFilesDir = "Files";
+    private NetFxVersionPatcherConfig _defaultConfig = new NetFxVersionPatcherConfig()
+        .InsertAttributesIfMissing()
+        .PatchCSharpProjects()
+        .PatchVbProjects()
+        .EnableGlobber()
+        .Recursive()
+        .DetectFileKindByExtension() as NetFxVersionPatcherConfig ?? throw new InvalidOperationException();
     
     private string PrepareTestDirectory()
     {
@@ -19,14 +25,14 @@ public class NetFxVersionPatcherTests
     public void Constructor_WithNullPath_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new NetFxVersionPatcher(null!));
+        Assert.Throws<ArgumentNullException>(() => new NetFxVersionPatcher(null!, new NetFxVersionPatcherConfig()));
     }
     
     [Fact]
     public void Constructor_WithEmptyPath_ThrowsArgumentException()
     {
         // Arrange, Act & Assert
-        Assert.Throws<ArgumentException>(() => new NetFxVersionPatcher(""));
+        Assert.Throws<ArgumentException>(() => new NetFxVersionPatcher("", _defaultConfig));
     }
     
     [Fact]
@@ -36,10 +42,10 @@ public class NetFxVersionPatcherTests
         var tempPath = Path.GetTempPath();
         
         // Act
-        var patcher = new NetFxVersionPatcher(tempPath);
+        var patcher = new NetFxVersionPatcher(tempPath, new NetFxVersionPatcherConfig());
         
         // Assert
-        Assert.Empty(patcher.Filters);
+        Assert.Empty(patcher.Config.Filters);
     }
     
     [Fact]
@@ -49,13 +55,14 @@ public class NetFxVersionPatcherTests
         var tempPath = Path.GetTempPath();
         
         // Act
-        var patcher = new NetFxVersionPatcher(tempPath)
-            .EnableGlobber()
-            .PatchCSharpProjects();
+        var config = new NetFxVersionPatcherConfig()
+            .PatchCSharpProjects()
+            .EnableGlobber() as NetFxVersionPatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new NetFxVersionPatcher(tempPath, config);
         
         // Assert
-        Assert.Single(patcher.Filters);
-        Assert.Equal("**/Properties/AssemblyInfo.cs", patcher.Filters[0]);
+        Assert.Single(patcher.Config.Filters);
+        Assert.Equal("**/Properties/AssemblyInfo.cs", patcher.Config.Filters[0]);
     }
     
     [Fact]
@@ -65,14 +72,15 @@ public class NetFxVersionPatcherTests
         var tempPath = Path.GetTempPath();
         
         // Act
-        var patcher = new NetFxVersionPatcher(tempPath)
-            .EnableGlobber()
-            .PatchVbProjects();
+        var config = new NetFxVersionPatcherConfig()
+            .PatchVbProjects()
+            .EnableGlobber() as NetFxVersionPatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new NetFxVersionPatcher(tempPath, config);
         
         // Assert
-        Assert.Equal(2, patcher.Filters.Count);
-        Assert.Equal("**/Properties/AssemblyInfo.vb", patcher.Filters[0]);
-        Assert.Equal("**/My Project/AssemblyInfo.vb", patcher.Filters[1]);
+        Assert.Equal(2, patcher.Config.Filters.Count);
+        Assert.Equal("**/Properties/AssemblyInfo.vb", patcher.Config.Filters[0]);
+        Assert.Equal("**/My Project/AssemblyInfo.vb", patcher.Config.Filters[1]);
     }
     
     [Fact]
@@ -129,10 +137,11 @@ using System.Runtime.InteropServices;
             DynamicSuffix = "1"
         };
         
-        var patcher = new NetFxVersionPatcher(testDir)
-            .DisableGlobber()
+        var config = new NetFxVersionPatcherConfig()
+            .WithCustomFilter("AssemblyInfo.cs")
             .Recursive()
-            .WithFilter("AssemblyInfo.cs");
+            .DisableGlobber() as NetFxVersionPatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new NetFxVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -198,8 +207,9 @@ Imports System.Runtime.InteropServices
             DynamicSuffix = "2"
         };
         
-        var patcher = new NetFxVersionPatcher(testDir)
-            .WithFilter("AssemblyInfo.vb");
+        var config = new NetFxVersionPatcherConfig()
+            .WithCustomFilter("AssemblyInfo.vb");
+        var patcher = new NetFxVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -255,9 +265,10 @@ using System.Runtime.InteropServices;
             CanonicalPart = new Version(4, 3, 2, 1)
         };
         
-        var patcher = new NetFxVersionPatcher(testDir)
-            .WithFilter("AssemblyInfo.cs")
+        var config = new NetFxVersionPatcherConfig()
+            .WithCustomFilter("AssemblyInfo.cs")
             .InsertAttributesIfMissing();
+        var patcher = new NetFxVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -306,9 +317,10 @@ Imports System.Runtime.InteropServices
             DynamicSuffix = "1"
         };
         
-        var patcher = new NetFxVersionPatcher(testDir)
-            .WithFilter("AssemblyInfo.vb")
+        var config = new NetFxVersionPatcherConfig()
+            .WithCustomFilter("AssemblyInfo.vb")
             .InsertAttributesIfMissing();
+        var patcher = new NetFxVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -354,9 +366,10 @@ using System.Runtime.InteropServices;
             CanonicalPart = new Version(6, 5, 4, 3)
         };
         
-        var patcher = new NetFxVersionPatcher(testDir)
-            .WithFilter("AssemblyInfo.cs")
+        var config = new NetFxVersionPatcherConfig()
+            .WithCustomFilter("AssemblyInfo.cs")
             .IgnoreMissingAttributes();
+        var patcher = new NetFxVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -392,10 +405,11 @@ using System.Runtime.InteropServices;
             CanonicalPart = new Version(7, 6, 5, 4)
         };
         
-        var patcher = new NetFxVersionPatcher(testDir)
-            .WithFilter("AssemblyInfo.cs")
+        var config = new NetFxVersionPatcherConfig()
+            .WithCustomFilter("AssemblyInfo.cs")
             .CheckUsingStatements()
             .InsertAttributesIfMissing();
+        var patcher = new NetFxVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -434,10 +448,11 @@ using System.Runtime.InteropServices;
             CanonicalPart = new Version(8, 7, 6, 5)
         };
         
-        var patcher = new NetFxVersionPatcher(testDir)
-            .WithFilter("AssemblyInfo.cs")
+        var config = new NetFxVersionPatcherConfig()
+            .WithCustomFilter("AssemblyInfo.cs")
             .IgnoreUsingStatements()
             .InsertAttributesIfMissing();
+        var patcher = new NetFxVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -502,8 +517,9 @@ using namespace System::Runtime::CompilerServices;
             FixedSuffix = "preview"
         };
         
-        var patcher = new NetFxVersionPatcher(testDir)
-            .WithFilter("AssemblyInfo.cpp");
+        var config = new NetFxVersionPatcherConfig()
+            .WithCustomFilter("AssemblyInfo.cpp");
+        var patcher = new NetFxVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -542,10 +558,11 @@ using System.Reflection;
         { 
             CanonicalPart = new Version(10, 9, 8, 7)
         };
-        var patcher = new NetFxVersionPatcher(testDir)
-            .DisableGlobber()
-            .WithFilter("AssemblyInfo.cs")
-            .NonRecursive();
+        var config = new NetFxVersionPatcherConfig()
+            .WithCustomFilter("AssemblyInfo.cs")
+            .NonRecursive()
+            .DisableGlobber() as NetFxVersionPatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new NetFxVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -589,10 +606,11 @@ using System.Reflection;
         { 
             CanonicalPart = new Version(11, 10, 9, 8)
         };
-        var patcher = new NetFxVersionPatcher(testDir)
-            .DisableGlobber()
-            .WithFilter("AssemblyInfo.cs")
-            .Recursive();
+        var config = new NetFxVersionPatcherConfig()
+            .WithCustomFilter("AssemblyInfo.cs")
+            .Recursive()
+            .DisableGlobber() as NetFxVersionPatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new NetFxVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -633,9 +651,10 @@ using System.Reflection;
         { 
             CanonicalPart = new Version(12, 11, 10, 9)
         };
-        var patcher = new NetFxVersionPatcher(testDir)
-            .EnableGlobber()
-            .PatchCSharpProjects();
+        var config = new NetFxVersionPatcherConfig()
+            .PatchCSharpProjects()
+            .EnableGlobber() as NetFxVersionPatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new NetFxVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -701,8 +720,9 @@ using System.Runtime.InteropServices;
             CanonicalPart = new Version(13, 12, 11, 10)
         };
         
-        var patcher = new NetFxVersionPatcher(testDir)
-            .WithFilter("AssemblyInfo.cs");
+        var config = new NetFxVersionPatcherConfig()
+            .WithCustomFilter("AssemblyInfo.cs");
+        var patcher = new NetFxVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);

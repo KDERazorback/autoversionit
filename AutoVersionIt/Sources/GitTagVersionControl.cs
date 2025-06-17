@@ -16,9 +16,9 @@ public class GitTagVersionControl : IVersionSource, IVersionTarget
     protected IChildProcessFactory ChildProcessFactory { get; }
     public bool ShouldIncludeMergeCommits { get; protected set; } = true;
 
-    public GitTagVersionControl(VersionReader reader, IChildProcessFactory factory, ILogger? logger = null)
+    public GitTagVersionControl(VersionReader reader, IChildProcessFactory factory, ILoggerFactory? loggerFactory = null)
     {
-        Logger = logger;
+        Logger = loggerFactory?.CreateLogger<GitTagVersionControl>();
         VersionReader = reader;
         ChildProcessFactory = factory;
     }

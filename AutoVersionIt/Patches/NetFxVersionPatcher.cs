@@ -1,4 +1,5 @@
 using System.Text;
+using AutoVersionIt.Patches.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace AutoVersionIt.Patches;
@@ -10,14 +11,22 @@ public class NetFxVersionPatcher : VersionPatcherBase
     /// diagnostic purposes.
     /// </summary>
     public override string Name => ".NET Framework Version Patcher";
-    public bool ShouldInsertAttributesIfMissing { get; protected set; } = true;
-    public bool ShouldCheckUsingStatements { get; protected set; } = true;
 
-    public NetFxVersionPatcher(string path, ILogger? logger = null)
-        :base(new DirectoryInfo(path))
+    public new NetFxVersionPatcherConfig Config { get; }
+
+    public NetFxVersionPatcher(NetFxVersionPatcherConfig config, ILogger? logger = null)
+        :base(config, new DirectoryInfo(Directory.GetCurrentDirectory()))
     {
         Logger = logger;
+        Config = config;
+    }
+    
+    public NetFxVersionPatcher(string path, NetFxVersionPatcherConfig config, ILogger? logger = null)
+        :base(config, new DirectoryInfo(path))
+    {
         if (string.IsNullOrWhiteSpace(path)) throw new ArgumentNullException(nameof(path));
+        Logger = logger;
+        Config = config;
     }
 
     protected override void PatchFile(FileInfo file, VersionInformation version)
@@ -28,7 +37,7 @@ public class NetFxVersionPatcher : VersionPatcherBase
             return;
         }
         
-        var fileKind = FileKindDetectionFunc?.Invoke(file) ?? GetFileDataKindByExtension(file);
+        var fileKind = Config.DetectFileKind(file);
         Logger?.LogDebug("--> Detected file kind {fileKind} for file {file}", fileKind, file.FullName);
 
         switch (fileKind)
@@ -68,14 +77,14 @@ public class NetFxVersionPatcher : VersionPatcherBase
         fs.Seek(0, SeekOrigin.Begin);
         fs.SetLength(0);
 
-        if (ShouldCheckUsingStatements)
+        if (Config.ShouldCheckUsingStatements)
         {
             InsertOrUpdateRegexString(lines, "using\\s+System\\.Reflection;", "using System.Reflection;");
             InsertOrUpdateRegexString(lines, "using\\s+System\\.Runtime\\.CompilerServices;", "using System.Runtime.CompilerServices;");
             InsertOrUpdateRegexString(lines, "using\\s+System\\.Runtime\\.InteropServices;", "using System.Runtime.InteropServices;");
         }
 
-        if (ShouldInsertAttributesIfMissing)
+        if (Config.ShouldInsertAttributesIfMissing)
         {
             AppendOrUpdateRegexString(lines, "\\[assembly:\\s*AssemblyVersion\\s*\\(.*\\)\\s*\\]", string.Format("[assembly: AssemblyVersion(\"{0}\")]", version.AsFullCanonicalString()));
             AppendOrUpdateRegexString(lines, "\\[assembly:\\s*AssemblyFileVersion\\s*\\(.*\\)\\s*\\]", string.Format("[assembly: AssemblyFileVersion(\"{0}\")]", version.AsFullCanonicalString()));
@@ -117,14 +126,14 @@ public class NetFxVersionPatcher : VersionPatcherBase
         fs.Seek(0, SeekOrigin.Begin);
         fs.SetLength(0);
         
-        if (ShouldCheckUsingStatements)
+        if (Config.ShouldCheckUsingStatements)
         {
             InsertOrUpdateRegexString(lines, "Imports\\s+System", "Imports System");
             InsertOrUpdateRegexString(lines, "Imports\\s+System\\.Reflection", "Imports System.Reflection");
             InsertOrUpdateRegexString(lines, "Imports\\s+System\\.Runtime\\.InteropServices", "Imports System.Runtime.InteropServices");
         }
 
-        if (ShouldInsertAttributesIfMissing)
+        if (Config.ShouldInsertAttributesIfMissing)
         {
             AppendOrUpdateRegexString(lines, "<Assembly:\\s*AssemblyVersion\\s*\\(.*\\)\\s*>", string.Format("<Assembly: AssemblyVersion(\"{0}\")>", version.AsFullCanonicalString()));
             AppendOrUpdateRegexString(lines, "<Assembly:\\s*AssemblyFileVersion\\s*\\(.*\\)\\s*>", string.Format("<Assembly: AssemblyFileVersion(\"{0}\")>", version.AsFullCanonicalString()));
@@ -163,13 +172,13 @@ public class NetFxVersionPatcher : VersionPatcherBase
             }
         }
         
-        if (ShouldCheckUsingStatements)
+        if (Config.ShouldCheckUsingStatements)
         {
             InsertOrUpdateRegexString(lines, "using\\s+namespace\\s+System::Reflection\\s*;", "using namespace System::Reflection;");
             InsertOrUpdateRegexString(lines, "using\\s+namespace\\s+System::Runtime::InteropServices\\s*;", "using namespace System::Runtime::InteropServices;");
         }
 
-        if (ShouldInsertAttributesIfMissing)
+        if (Config.ShouldInsertAttributesIfMissing)
         {
             AppendOrUpdateRegexString(lines, "\\[assembly:\\s*AssemblyVersion\\s*\\(.*\\)\\s*\\]\\s*;", string.Format("[assembly: AssemblyVersion(\"{0}\")];", version.AsFullCanonicalString()));
             AppendOrUpdateRegexString(lines, "\\[assembly:\\s*AssemblyFileVersion\\s*\\(.*\\)\\s*\\]\\s*;", string.Format("[assembly: AssemblyFileVersion(\"{0}\")];", version.AsFullCanonicalString()));
@@ -190,122 +199,5 @@ public class NetFxVersionPatcher : VersionPatcherBase
         
         writer.Flush();
         fs.Flush();
-    }
-
-    public NetFxVersionPatcher InsertAttributesIfMissing()
-    {
-        ShouldInsertAttributesIfMissing = true;
-        
-        return this;
-    }
-
-    public NetFxVersionPatcher IgnoreMissingAttributes()
-    {
-        ShouldInsertAttributesIfMissing = false;
-        
-        return this;
-    }
-
-    public NetFxVersionPatcher PatchCSharpProjects()
-    {
-        if (ShouldUseGlobber)
-        {
-            WithFilter("**/Properties/AssemblyInfo.cs");
-            
-            return this;
-        }
-        
-        WithFilter("AssemblyInfo.cs");
-
-        return this;
-    }
-
-    public NetFxVersionPatcher PatchVbProjects()
-    {
-        if (ShouldUseGlobber)
-        {
-            WithFilter("**/Properties/AssemblyInfo.vb");
-            WithFilter("**/My Project/AssemblyInfo.vb");
-
-            return this;
-        }
-        
-        WithFilter("AssemblyInfo.vb");
-        
-        return this;
-    }
-
-    public NetFxVersionPatcher CheckUsingStatements()
-    {
-        ShouldCheckUsingStatements = true;
-
-        return this;
-    }
-
-    public NetFxVersionPatcher IgnoreUsingStatements()
-    {
-        ShouldCheckUsingStatements = false;
-
-        return this;
-    }
-    
-    public NetFxVersionPatcher WithFilter(string filter)
-    {
-        if (string.IsNullOrWhiteSpace(filter)) throw new ArgumentNullException(nameof(filter));
-        FilterList.Add(filter);
-
-        return this;
-    }
-
-    public NetFxVersionPatcher WithFilters(IEnumerable<string> filters)
-    {
-        foreach (var filter in filters)
-            WithFilter(filter);
-        
-        return this;
-    }
-
-    public NetFxVersionPatcher ClearFilters()
-    {
-        FilterList.Clear();
-        return this;
-    }
-
-    public NetFxVersionPatcher Recursive()
-    {
-        ShouldRecurse = true;
-
-        return this;
-    }
-
-    public NetFxVersionPatcher NonRecursive()
-    {
-        ShouldRecurse = false;
-        
-        return this;
-    }
-
-    public NetFxVersionPatcher EnableGlobber()
-    {
-        ShouldUseGlobber = true;
-        return this;
-    }
-
-    public NetFxVersionPatcher DisableGlobber()
-    {
-        ShouldUseGlobber = false;
-        return this;
-    }
-
-    public NetFxVersionPatcher DetectFileKindByExtension()
-    {
-        FileKindDetectionFunc = GetFileDataKindByExtension;
-        return this;
-    }
-
-    public NetFxVersionPatcher DetectFileKindWithFunc(Func<FileInfo, FileDataKind> func)
-    {
-        FileKindDetectionFunc = func;
-        return this;
     }
 }

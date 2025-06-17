@@ -1,10 +1,16 @@
 using AutoVersionIt.Patches;
+using AutoVersionIt.Patches.Configuration;
 
 namespace AutoVersionIt.Tests.Patches;
 
 public class TextFilePatcherTests
 {
     private const string TestFilesDir = "Files";
+    
+    private TextFilePatcherConfig _defaultConfig = new TextFilePatcherConfig()
+        .EnableGlobber()
+        .Recursive()
+        .DetectFileKindByExtension() as TextFilePatcherConfig ?? throw new InvalidOperationException();
     
     private string PrepareTestDirectory()
     {
@@ -18,14 +24,14 @@ public class TextFilePatcherTests
     public void Constructor_WithNullPath_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new TextFilePatcher(null!));
+        Assert.Throws<ArgumentNullException>(() => new TextFilePatcher(null!, new TextFilePatcherConfig()));
     }
     
     [Fact]
     public void Constructor_WithEmptyPath_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        Assert.Throws<ArgumentException>(() => new TextFilePatcher(""));
+        Assert.Throws<ArgumentException>(() => new TextFilePatcher("", _defaultConfig));
     }
     
     [Fact]
@@ -35,10 +41,10 @@ public class TextFilePatcherTests
         var tempPath = Path.GetTempPath();
         
         // Act
-        var patcher = new TextFilePatcher(tempPath);
+        var patcher = new TextFilePatcher(tempPath, _defaultConfig);
         
         // Assert
-        Assert.Empty(patcher.Filters);
+        Assert.Empty(patcher.Config.Filters);
     }
     
     [Fact]
@@ -49,12 +55,13 @@ public class TextFilePatcherTests
         var filter = "*.txt";
         
         // Act
-        var patcher = new TextFilePatcher(tempPath)
-            .WithFilter(filter);
+        var config = new TextFilePatcherConfig()
+            .WithCustomFilter(filter);
+        var patcher = new TextFilePatcher(tempPath, config);
         
         // Assert
-        Assert.Single(patcher.Filters);
-        Assert.Equal(filter, patcher.Filters[0]);
+        Assert.Single(patcher.Config.Filters);
+        Assert.Equal(filter, patcher.Config.Filters[0]);
     }
     
     [Fact]
@@ -65,14 +72,15 @@ public class TextFilePatcherTests
         var filters = new[] { "*.txt", "*.config", "*.ini" };
         
         // Act
-        var patcher = new TextFilePatcher(tempPath)
+        var config = new TextFilePatcherConfig()
             .WithFilters(filters);
+        var patcher = new TextFilePatcher(tempPath, config);
         
         // Assert
-        Assert.Equal(3, patcher.Filters.Count);
-        Assert.Equal(filters[0], patcher.Filters[0]);
-        Assert.Equal(filters[1], patcher.Filters[1]);
-        Assert.Equal(filters[2], patcher.Filters[2]);
+        Assert.Equal(3, patcher.Config.Filters.Count);
+        Assert.Equal(filters[0], patcher.Config.Filters[0]);
+        Assert.Equal(filters[1], patcher.Config.Filters[1]);
+        Assert.Equal(filters[2], patcher.Config.Filters[2]);
     }
     
     [Fact]
@@ -80,10 +88,10 @@ public class TextFilePatcherTests
     {
         // Arrange
         var tempPath = Path.GetTempPath();
-        var patcher = new TextFilePatcher(tempPath);
+        var patcher = new TextFilePatcher(tempPath, _defaultConfig);
         
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => patcher.WithFilter(null!));
+        Assert.Throws<ArgumentNullException>(() => patcher.Config.WithCustomFilter(null!));
     }
     
     [Fact]
@@ -91,15 +99,16 @@ public class TextFilePatcherTests
     {
         // Arrange
         var tempPath = Path.GetTempPath();
-        var patcher = new TextFilePatcher(tempPath)
-            .WithFilter("*.txt")
-            .WithFilter("*.config");
+        var config = new TextFilePatcherConfig()
+            .WithCustomFilter("*.txt")
+            .WithCustomFilter("*.config");
+        var patcher = new TextFilePatcher(tempPath, config);
         
         // Act
-        patcher.ClearFilters();
+        patcher.Config.ClearFilters();
         
         // Assert
-        Assert.Empty(patcher.Filters);
+        Assert.Empty(patcher.Config.Filters);
     }
     
     [Fact]
@@ -111,8 +120,9 @@ public class TextFilePatcherTests
         File.Copy(Path.Combine(TestFilesDir, "SampleVersionInfo3.txt"), sampleFile, true);
         
         var version = new VersionInformation { CanonicalPart = new Version(2, 1, 0, 0) };
-        var patcher = new TextFilePatcher(testDir)
-            .WithFilter("*.txt");
+        var config = new TextFilePatcherConfig()
+            .WithCustomFilter("*.txt");
+        var patcher = new TextFilePatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -139,8 +149,9 @@ public class TextFilePatcherTests
             CanonicalPart = new Version(3, 0, 1, 0),
             FixedSuffix = "beta"
         };
-        var patcher = new TextFilePatcher(testDir)
-            .WithFilter("*.txt");
+        var config = new TextFilePatcherConfig()
+            .WithCustomFilter("*.txt");
+        var patcher = new TextFilePatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -167,8 +178,9 @@ public class TextFilePatcherTests
             FixedSuffix = "preview",
             DynamicSuffix = "001"
         };
-        var patcher = new TextFilePatcher(testDir)
-            .WithFilter("*.txt");
+        var config = new TextFilePatcherConfig()
+            .WithCustomFilter("*.txt");
+        var patcher = new TextFilePatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -195,10 +207,11 @@ public class TextFilePatcherTests
         File.Copy(Path.Combine(TestFilesDir, "SampleVersionInfo3.txt"), sampleFile2, true);
         
         var version = new VersionInformation { CanonicalPart = new Version(8, 0, 0, 0) };
-        var patcher = new TextFilePatcher(testDir)
+        var config = new TextFilePatcherConfig()
+            .WithCustomFilter("*.txt")
             .DisableGlobber()
-            .WithFilter("*.txt")
-            .NonRecursive();
+            .NonRecursive() as TextFilePatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new TextFilePatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -231,10 +244,11 @@ public class TextFilePatcherTests
         File.Copy(Path.Combine(TestFilesDir, "SampleVersionInfo3.txt"), sampleFile2, true);
         
         var version = new VersionInformation { CanonicalPart = new Version(9, 0, 0, 0) };
-        var patcher = new TextFilePatcher(testDir)
+        var config = new TextFilePatcherConfig()
+            .WithCustomFilter("*.txt")
             .DisableGlobber()
-            .WithFilter("*.txt")
-            .Recursive();
+            .Recursive() as TextFilePatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new TextFilePatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -271,9 +285,10 @@ public class TextFilePatcherTests
         File.Copy(Path.Combine(TestFilesDir, "SampleVersionInfo3.txt"), sampleFile3, true);
         
         var version = new VersionInformation { CanonicalPart = new Version(10, 0, 0, 0) };
-        var patcher = new TextFilePatcher(testDir)
-            .WithFilter("**/*.txt") // Glob pattern to match all txt files in any directory
-            .EnableGlobber();
+        var config = new TextFilePatcherConfig()
+            .WithCustomFilter("**/*.txt") // Glob pattern to match all txt files in any directory
+            .EnableGlobber() as TextFilePatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new TextFilePatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -303,8 +318,9 @@ public class TextFilePatcherTests
         
         string originalContent = File.ReadAllText(sampleFile);
         var version = new VersionInformation { CanonicalPart = new Version(14, 0, 0, 0) };
-        var patcher = new TextFilePatcher(testDir)
-            .WithFilter("*.txt");
+        var config = new TextFilePatcherConfig()
+            .WithCustomFilter("*.txt");
+        var patcher = new TextFilePatcher(testDir, config);
         
         // Act
         patcher.Patch(version);

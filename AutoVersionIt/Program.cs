@@ -13,6 +13,7 @@ var loggerFactory = LoggerFactory.Create(builder =>
     {
         x.ColorBehavior = LoggerColorBehavior.Default;
         x.IncludeScopes = true;
+        x.SingleLine = true;
     });
     builder.SetMinimumLevel(minimumLogLevel);
 });

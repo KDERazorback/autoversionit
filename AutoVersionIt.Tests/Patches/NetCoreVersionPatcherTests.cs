@@ -1,12 +1,18 @@
 using System.Text;
 using AutoVersionIt.Patches;
+using AutoVersionIt.Patches.Configuration;
 
 namespace AutoVersionIt.Tests.Patches;
 
 public class NetCoreVersionPatcherTests
 {
-    private const string TestFilesDir = "Files";
-    private const string SampleNetCoreDir = "SampleNetCoreProj";
+    private NetCoreVersionPatcherConfig _defaultConfig = new NetCoreVersionPatcherConfig()
+        .InsertAttributesIfMissing()
+        .PatchCSharpProjects()
+        .PatchVbProjects()
+        .EnableGlobber()
+        .Recursive()
+        .DetectFileKindByExtension() as NetCoreVersionPatcherConfig ?? throw new InvalidOperationException();
     
     private string PrepareTestDirectory()
     {
@@ -20,14 +26,14 @@ public class NetCoreVersionPatcherTests
     public void Constructor_WithNullPath_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new NetCoreVersionPatcher(null!));
+        Assert.Throws<ArgumentNullException>(() => new NetCoreVersionPatcher(null!, new NetCoreVersionPatcherConfig()));
     }
     
     [Fact]
     public void Constructor_WithEmptyPath_ThrowsArgumentException()
     {
         // Arrange, Act & Assert
-        Assert.Throws<ArgumentException>(() => new NetCoreVersionPatcher(""));
+        Assert.Throws<ArgumentException>(() => new NetCoreVersionPatcher("", _defaultConfig));
     }
     
     [Fact]
@@ -37,10 +43,10 @@ public class NetCoreVersionPatcherTests
         var tempPath = Path.GetTempPath();
         
         // Act
-        var patcher = new NetCoreVersionPatcher(tempPath);
+        var patcher = new NetCoreVersionPatcher(tempPath, new NetCoreVersionPatcherConfig());
         
         // Assert
-        Assert.Empty(patcher.Filters);
+        Assert.Empty(patcher.Config.Filters);
     }
     
     [Fact]
@@ -50,13 +56,14 @@ public class NetCoreVersionPatcherTests
         var tempPath = Path.GetTempPath();
         
         // Act
-        var patcher = new NetCoreVersionPatcher(tempPath)
-            .EnableGlobber()
-            .PatchCSharpProjects();
+        var config = new NetCoreVersionPatcherConfig()
+            .PatchCSharpProjects()
+            .EnableGlobber() as NetCoreVersionPatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new NetCoreVersionPatcher(tempPath, config);
         
         // Assert
-        Assert.Single(patcher.Filters);
-        Assert.Equal("**/*.csproj", patcher.Filters[0]);
+        Assert.Single(patcher.Config.Filters);
+        Assert.Equal("**/*.csproj", patcher.Config.Filters[0]);
     }
     
     [Fact]
@@ -66,13 +73,14 @@ public class NetCoreVersionPatcherTests
         var tempPath = Path.GetTempPath();
         
         // Act
-        var patcher = new NetCoreVersionPatcher(tempPath)
-            .EnableGlobber()
-            .PatchVbProjects();
+        var config = new NetCoreVersionPatcherConfig()
+            .PatchVbProjects()
+            .EnableGlobber() as NetCoreVersionPatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new NetCoreVersionPatcher(tempPath, config);
         
         // Assert
-        Assert.Single(patcher.Filters);
-        Assert.Equal("**/*.vbproj", patcher.Filters[0]);
+        Assert.Single(patcher.Config.Filters);
+        Assert.Equal("**/*.vbproj", patcher.Config.Filters[0]);
     }
     
     [Fact]
@@ -103,8 +111,9 @@ public class NetCoreVersionPatcherTests
             DynamicSuffix = "1"
         };
         
-        var patcher = new NetCoreVersionPatcher(testDir)
-            .WithFilter("*.csproj");
+        var config = new NetCoreVersionPatcherConfig()
+            .WithCustomFilter("*.csproj");
+        var patcher = new NetCoreVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -148,8 +157,9 @@ public class NetCoreVersionPatcherTests
             DynamicSuffix = "2"
         };
         
-        var patcher = new NetCoreVersionPatcher(testDir)
-            .WithFilter("*.vbproj");
+        var config = new NetCoreVersionPatcherConfig()
+            .WithCustomFilter("*.vbproj");
+        var patcher = new NetCoreVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -189,10 +199,11 @@ public class NetCoreVersionPatcherTests
         { 
             CanonicalPart = new Version(4, 3, 2, 1)
         };
-        
-        var patcher = new NetCoreVersionPatcher(testDir)
-            .WithFilter("*.csproj")
+
+        var config = new NetCoreVersionPatcherConfig()
+            .WithCustomFilter("*.csproj")
             .InsertAttributesIfMissing();
+        var patcher = new NetCoreVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -230,9 +241,10 @@ public class NetCoreVersionPatcherTests
             CanonicalPart = new Version(5, 4, 3, 2)
         };
         
-        var patcher = new NetCoreVersionPatcher(testDir)
-            .WithFilter("*.csproj")
+        var config = new NetCoreVersionPatcherConfig()
+            .WithCustomFilter("*.csproj")
             .IgnoreMissingAttributes();
+        var patcher = new NetCoreVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -299,9 +311,10 @@ public class NetCoreVersionPatcherTests
             DynamicSuffix = "3"
         };
         
-        var patcher = new NetCoreVersionPatcher(testDir)
-            .WithFilter("*.csproj")
-            .WithFilter("*.vbproj");
+        var config = new NetCoreVersionPatcherConfig()
+            .WithCustomFilter("*.csproj")
+            .WithCustomFilter("*.vbproj");
+        var patcher = new NetCoreVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -351,8 +364,9 @@ public class NetCoreVersionPatcherTests
             CanonicalPart = new Version(8, 7, 6, 5)
         };
         
-        var patcher = new NetCoreVersionPatcher(testDir)
-            .WithFilter("*.csproj");
+        var config = new NetCoreVersionPatcherConfig()
+            .WithCustomFilter("*.csproj");
+        var patcher = new NetCoreVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -400,10 +414,11 @@ public class NetCoreVersionPatcherTests
             CanonicalPart = new Version(9, 8, 7, 6)
         };
         
-        var patcher = new NetCoreVersionPatcher(testDir)
+        var config = new NetCoreVersionPatcherConfig()
+            .WithCustomFilter("*.csproj")
             .DisableGlobber()
-            .WithFilter("*.csproj")
-            .NonRecursive();
+            .NonRecursive() as NetCoreVersionPatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new NetCoreVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -451,10 +466,11 @@ public class NetCoreVersionPatcherTests
             CanonicalPart = new Version(10, 9, 8, 7)
         };
         
-        var patcher = new NetCoreVersionPatcher(testDir)
-            .DisableGlobber()
-            .WithFilter("*.csproj")
-            .Recursive();
+        var config = new NetCoreVersionPatcherConfig()
+            .WithCustomFilter("**/*.csproj")
+            .Recursive()
+            .EnableGlobber() as NetCoreVersionPatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new NetCoreVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -504,9 +520,10 @@ public class NetCoreVersionPatcherTests
             CanonicalPart = new Version(11, 10, 9, 8)
         };
         
-        var patcher = new NetCoreVersionPatcher(testDir)
-            .EnableGlobber()
-            .WithFilter("**/*.csproj");
+        var config = new NetCoreVersionPatcherConfig()
+            .WithCustomFilter("**/*.csproj")
+            .EnableGlobber() as NetCoreVersionPatcherConfig ?? throw new InvalidOperationException();
+        var patcher = new NetCoreVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -551,9 +568,10 @@ public class NetCoreVersionPatcherTests
             CanonicalPart = new Version(12, 11, 10, 9),
             FixedSuffix = "preview"
         };
-        
-        var patcher = new NetCoreVersionPatcher(testDir)
-            .WithFilter("*.csproj");
+
+        var config = new NetCoreVersionPatcherConfig()
+            .WithCustomFilter("*.csproj");
+        var patcher = new NetCoreVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -599,7 +617,7 @@ public class NetCoreVersionPatcherTests
         using (var fileStream = new FileStream(sampleFile, FileMode.Open, FileAccess.Read))
         {
             var buffer = new byte[3];
-            fileStream.Read(buffer, 0, 3);
+            fileStream.ReadExactly(buffer, 0, 3);
             hasBomBefore = buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF;
         }
         
@@ -608,8 +626,9 @@ public class NetCoreVersionPatcherTests
             CanonicalPart = new Version(13, 12, 11, 10)
         };
         
-        var patcher = new NetCoreVersionPatcher(testDir)
-            .WithFilter("*.csproj");
+        var config = new NetCoreVersionPatcherConfig()
+            .WithCustomFilter("*.csproj");
+        var patcher = new NetCoreVersionPatcher(testDir, config);
         
         // Act
         patcher.Patch(version);
@@ -626,7 +645,7 @@ public class NetCoreVersionPatcherTests
         using (var fileStream = new FileStream(sampleFile, FileMode.Open, FileAccess.Read))
         {
             var buffer = new byte[3];
-            fileStream.Read(buffer, 0, 3);
+            fileStream.ReadExactly(buffer, 0, 3);
             hasBomAfter = buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF;
         }
         
@@ -647,8 +666,9 @@ public class NetCoreVersionPatcherTests
         File.WriteAllText(unsupportedFile, content);
         
         var version = new VersionInformation { CanonicalPart = new Version(1, 0, 0, 0) };
-        var patcher = new NetCoreVersionPatcher(testDir)
-            .WithFilter("*.txt");
+        var config = new NetCoreVersionPatcherConfig()
+            .WithCustomFilter("*.txt");
+        var patcher = new NetCoreVersionPatcher(testDir, config);
         
         // Act & Assert
         Assert.Throws<NotSupportedException>(() => patcher.Patch(version));

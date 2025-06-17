@@ -1,5 +1,6 @@
 using System.Text;
 using System.Xml;
+using AutoVersionIt.Patches.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace AutoVersionIt.Patches;
@@ -11,13 +12,22 @@ public class NetCoreVersionPatcher : VersionPatcherBase
     /// diagnostic purposes.
     /// </summary>
     public override string Name => ".NET Core Version Patcher";
-    public bool ShouldInsertAttributesIfMissing { get; protected set; } = true;
 
-    public NetCoreVersionPatcher(string path, ILogger? logger = null)
-        :base(new DirectoryInfo(path))
+    public new NetCoreVersionPatcherConfig Config { get; }
+
+    public NetCoreVersionPatcher(NetCoreVersionPatcherConfig config, ILogger? logger = null)
+        :base(config, new DirectoryInfo(Directory.GetCurrentDirectory()))
     {
+        Config = config;
         Logger = logger;
+    }
+
+    public NetCoreVersionPatcher(string path, NetCoreVersionPatcherConfig config, ILogger? logger = null)
+        :base(config, new DirectoryInfo(path))
+    {
         if (string.IsNullOrWhiteSpace(path)) throw new ArgumentNullException(nameof(path));
+        Config = config;
+        Logger = logger;
     }
 
     protected override void PatchFile(FileInfo file, VersionInformation version)
@@ -27,8 +37,8 @@ public class NetCoreVersionPatcher : VersionPatcherBase
             Logger?.LogWarning(" --> File {file} does not exist. Skipping.", file.FullName);
             return;
         }
-        
-        var fileKind = FileKindDetectionFunc?.Invoke(file) ?? GetFileDataKindByExtension(file);
+
+        var fileKind = Config.DetectFileKind(file);
         Logger?.LogDebug("--> Detected file kind {fileKind} for file {file}", fileKind, file.FullName);
 
         switch (fileKind)
@@ -52,7 +62,7 @@ public class NetCoreVersionPatcher : VersionPatcherBase
         using (var reader = new StreamReader(fs, enc, leaveOpen: true))
             doc.Load(reader);
 
-        if (ShouldInsertAttributesIfMissing)
+        if (Config.ShouldInsertAttributesIfMissing)
         {
             AppendOrUpdateXmlNode(doc, "/Project/PropertyGroup/AssemblyVersion", version.AsFullCanonicalString());
             AppendOrUpdateXmlNode(doc, "/Project/PropertyGroup/FileVersion", version.AsFullCanonicalString());
@@ -72,107 +82,5 @@ public class NetCoreVersionPatcher : VersionPatcherBase
         
         writer.Flush();
         fs.Flush();
-    }
-
-    public NetCoreVersionPatcher InsertAttributesIfMissing()
-    {
-        ShouldInsertAttributesIfMissing = true;
-        
-        return this;
-    }
-
-    public NetCoreVersionPatcher IgnoreMissingAttributes()
-    {
-        ShouldInsertAttributesIfMissing = false;
-        
-        return this;
-    }
-
-    public NetCoreVersionPatcher PatchCSharpProjects()
-    {
-        if (ShouldUseGlobber)
-        {
-            WithFilter("**/*.csproj");
-
-            return this;
-        }
-        
-        WithFilter("*.csproj");
-
-        return this;
-    }
-
-    public NetCoreVersionPatcher PatchVbProjects()
-    {
-        if (ShouldUseGlobber)
-        {
-            WithFilter("**/*.vbproj");
-
-            return this;
-        }
-        
-        WithFilter("*.vbproj");
-        
-        return this;
-    }
-
-    public NetCoreVersionPatcher WithFilter(string filter)
-    {
-        if (string.IsNullOrWhiteSpace(filter)) throw new ArgumentNullException(nameof(filter));
-        FilterList.Add(filter);
-
-        return this;
-    }
-
-    public NetCoreVersionPatcher WithFilters(IEnumerable<string> filters)
-    {
-        foreach (var filter in filters)
-            WithFilter(filter);
-        
-        return this;
-    }
-
-    public NetCoreVersionPatcher ClearFilters()
-    {
-        FilterList.Clear();
-        return this;
-    }
-
-    public NetCoreVersionPatcher Recursive()
-    {
-        ShouldRecurse = true;
-
-        return this;
-    }
-
-    public NetCoreVersionPatcher NonRecursive()
-    {
-        ShouldRecurse = false;
-        
-        return this;
-    }
-
-    public NetCoreVersionPatcher EnableGlobber()
-    {
-        ShouldUseGlobber = true;
-        return this;
-    }
-
-    public NetCoreVersionPatcher DisableGlobber()
-    {
-        ShouldUseGlobber = false;
-        return this;
-    }
-
-    public NetCoreVersionPatcher DetectFileKindByExtension()
-    {
-        FileKindDetectionFunc = GetFileDataKindByExtension;
-        return this;
-    }
-
-    public NetCoreVersionPatcher DetectFileKindWithFunc(Func<FileInfo, FileDataKind> func)
-    {
-        FileKindDetectionFunc = func;
-        return this;
     }
 }

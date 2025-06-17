@@ -1,5 +1,6 @@
 using System.Text;
 using System.Xml;
+using AutoVersionIt.Patches.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace AutoVersionIt.Patches;
@@ -11,35 +12,22 @@ public class NuspecVersionPatcher : VersionPatcherBase
     /// diagnostic purposes.
     /// </summary>
     public override string Name => "NuSpec Version Patcher";
-    public bool ShouldInsertAttributesIfMissing { get; protected set; } = true;
 
-    public NuspecVersionPatcher(string path, ILogger? logger = null)
-        :base(new DirectoryInfo(path))
+    public new NuspecVersionPatcherConfig Config { get; }
+
+    public NuspecVersionPatcher(NuspecVersionPatcherConfig config, ILogger? logger = null)
+        : base(config, new DirectoryInfo(Directory.GetCurrentDirectory()))
     {
         Logger = logger;
-        if (string.IsNullOrWhiteSpace(path)) throw new ArgumentNullException(nameof(path));
-        EnableGlobber();
+        Config = config;
     }
 
-    protected override void PatchFile(FileInfo file, VersionInformation version)
+    public NuspecVersionPatcher(string path, NuspecVersionPatcherConfig config, ILogger? logger = null)
+        : base(config, new DirectoryInfo(path))
     {
-        if (!file.Exists)
-        {
-            Logger?.LogWarning(" --> File {file} does not exist. Skipping.", file.FullName);
-            return;
-        }
-        
-        var fileKind = FileKindDetectionFunc?.Invoke(file) ?? GetFileDataKindByExtension(file);
-        Logger?.LogDebug("--> Detected file kind {fileKind} for file {file}", fileKind, file.FullName);
-
-        switch (fileKind)
-        {
-            case FileDataKind.NuSpec:
-                PatchNuspecFile(file, version);
-                break;
-            default:
-                throw new NotSupportedException($"File extension {file.Extension} is not supported.");
-        }
+        if (string.IsNullOrWhiteSpace(path)) throw new ArgumentNullException(nameof(path));
+        Logger = logger;
+        Config = config;
     }
 
     protected void PatchNuspecFile(FileInfo file, VersionInformation version)
@@ -53,11 +41,11 @@ public class NuspecVersionPatcher : VersionPatcherBase
         var doc = new XmlDocument();
         using (var reader = new StreamReader(fs, enc, leaveOpen: true))
             doc.Load(reader);
-        
-        if (ShouldInsertAttributesIfMissing)
+
+        if (Config.ShouldInsertAttributesIfMissing)
             AppendOrUpdateXmlNode(doc, "/package/metadata/version", version.ToString());
         else
-            
+
             UpdateXmlNodeIfExists(doc, "/package/metadata/version", version.ToString());
 
         fs.Seek(0, SeekOrigin.Begin);
@@ -65,81 +53,28 @@ public class NuspecVersionPatcher : VersionPatcherBase
         if (Equals(enc, Encoding.ASCII)) enc = Encoding.UTF8;
         using (var writer = new StreamWriter(fs, enc, leaveOpen: true))
             doc.Save(writer);
-        
+
         fs.Flush();
     }
 
-    public NuspecVersionPatcher InsertAttributesIfMissing()
+    protected override void PatchFile(FileInfo file, VersionInformation version)
     {
-        ShouldInsertAttributesIfMissing = true;
-        
-        return this;
-    }
-
-    public NuspecVersionPatcher IgnoreMissingAttributes()
-    {
-        ShouldInsertAttributesIfMissing = false;
-        
-        return this;
-    }
-
-    public NuspecVersionPatcher Recursive()
-    {
-        ShouldRecurse = true;
-
-        return this;
-    }
-
-    public NuspecVersionPatcher NonRecursive()
-    {
-        ShouldRecurse = false;
-        
-        return this;
-    }
-
-    public NuspecVersionPatcher EnableGlobber()
-    {
-        ShouldUseGlobber = true;
-        var indices = new Stack<int>();
-        for (var index = 0; index < FilterList.Count; index++)
+        if (!file.Exists)
         {
-            var filter = FilterList[index];
-            if (string.Equals(filter, "*.nuspec", StringComparison.OrdinalIgnoreCase))
-                indices.Push(index);
+            Logger?.LogWarning(" --> File {file} does not exist. Skipping.", file.FullName);
+            return;
         }
-        while (indices.Count > 0)
-            FilterList.RemoveAt(indices.Pop());
 
-        FilterList.Add("**/*.nuspec");
-        return this;
-    }
+        var fileKind = Config.DetectFileKind(file);
+        Logger?.LogDebug("--> Detected file kind {fileKind} for file {file}", fileKind, file.FullName);
 
-    public NuspecVersionPatcher DisableGlobber()
-    {
-        ShouldUseGlobber = false;
-        var indices = new Stack<int>();
-        for (var index = 0; index < FilterList.Count; index++)
+        switch (fileKind)
         {
-            var filter = FilterList[index];
-            if (string.Equals(filter, "**/*.nuspec", StringComparison.OrdinalIgnoreCase))
-                indices.Push(index);
+            case FileDataKind.NuSpec:
+                PatchNuspecFile(file, version);
+                break;
+            default:
+                throw new NotSupportedException($"File extension {file.Extension} is not supported.");
         }
-        while (indices.Count > 0)
-            FilterList.RemoveAt(indices.Pop());
-
-        FilterList.Add("*.nuspec");
-        return this;
-    }
-
-    public NuspecVersionPatcher DetectFileKindByExtension()
-    {
-        FileKindDetectionFunc = GetFileDataKindByExtension;
-        return this;
-    }
-
-    public NuspecVersionPatcher DetectFileKindWithFunc(Func<FileInfo, FileDataKind> func)
-    {
-        FileKindDetectionFunc = func;
-        return this;
     }
 }
