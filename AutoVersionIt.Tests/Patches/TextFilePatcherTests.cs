@@ -91,7 +91,7 @@ public class TextFilePatcherTests
         var patcher = new TextFilePatcher(tempPath, _defaultConfig);
         
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => patcher.Config.WithCustomFilter(null!));
+        Assert.Throws<ArgumentException>(() => patcher.Config.WithCustomFilter(null!));
     }
     
     [Fact]
