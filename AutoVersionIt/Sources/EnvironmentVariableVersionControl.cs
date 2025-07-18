@@ -54,7 +54,24 @@ public class EnvironmentVariableVersionControl : IVersionSource, IVersionTarget
     public VersionInformation GetCurrentVersion()
     {
         var data = Environment.GetEnvironmentVariable(EnvironmentVariableName);
-        if (string.IsNullOrWhiteSpace(data)) return new VersionInformation();
+        if (string.IsNullOrWhiteSpace(data))
+        {
+            var segments = new string[4];
+            segments[0] = Environment.GetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "MAJOR"))?.Trim() ?? string.Empty;
+            segments[1] = Environment.GetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "MINOR"))?.Trim() ?? string.Empty;
+            segments[2] = Environment.GetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "BUILD"))?.Trim() ?? string.Empty;
+            segments[3] = Environment.GetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "REVISION"))?.Trim() ?? string.Empty;
+            
+            var suffix = Environment.GetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "SUFFIX"))?.Trim() ?? string.Empty;
+            
+            var versionString = string.Join(".", segments.Where(s => !string.IsNullOrWhiteSpace(s)));
+            if (string.IsNullOrWhiteSpace(data)) return new VersionInformation();
+            
+            if (!string.IsNullOrWhiteSpace(suffix))
+                versionString += string.Format("-{0}", suffix);
+
+            data = versionString;
+        }
 
         data = data.Trim();
         data = data.Replace(" ", "").Replace("\t", "");
@@ -69,5 +86,11 @@ public class EnvironmentVariableVersionControl : IVersionSource, IVersionTarget
     public void SetNewVersion(VersionInformation versionInformation)
     {
         Environment.SetEnvironmentVariable(EnvironmentVariableName, versionInformation.ToString());
+        Environment.SetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "CANONICAL"), versionInformation.AsFullCanonicalString());
+        Environment.SetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "MAJOR"), versionInformation.CanonicalPart.Major.ToString());
+        Environment.SetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "MINOR"), versionInformation.CanonicalPart.Minor.ToString());
+        Environment.SetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "BUILD"), versionInformation.CanonicalPart.Build.ToString());
+        Environment.SetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "REVISION"), versionInformation.CanonicalPart.Revision.ToString());
+        Environment.SetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "SUFFIX"), versionInformation.DynamicSuffix.Trim());
     }
 }
