@@ -9,7 +9,7 @@ WINDIR="${PWD}/app-${WINPLATFORM}"
 LINUXDIR="${PWD}/app-${LINUXPLATFORM}"
 PUBLISHDIR="${PWD}/publish"
 
-VERSION="$( git tag )"
+VERSION="$( git tag | tail -n 1 )"
 
 if [ -z "${VERSION}" ]; then
 	echo "Cannot get current version from tag."
