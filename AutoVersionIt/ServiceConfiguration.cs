@@ -73,13 +73,8 @@ public static class ServiceConfiguration
 
     private static void AddVersionReader(IConfiguration configuration, IServiceCollection services)
     {
-        var suffix = configuration.GetValue("suffix", string.Empty);
-
         var reader = new VersionReader()
             .ThrowIfEmpty();
-
-        if (!string.IsNullOrWhiteSpace(suffix))
-            reader.WithDefaultFixedSuffix(suffix.Trim());
         
         services.AddSingleton(reader);
     }

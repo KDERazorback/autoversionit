@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Extensions.Configuration;
 
 namespace AutoVersionIt.Strategies;
 
@@ -19,6 +20,8 @@ public class ReleaseCandidateVersioning : VersioningStrategyBase
     /// diagnostic purposes.
     /// </summary>
     public override string Name => "Release Candidate Versioning";
+
+    public ReleaseCandidateVersioning(IConfiguration configuration) : base(configuration) { }
     
     /// <summary>
     /// Increments the version based on the specified version bump type.
@@ -43,6 +46,10 @@ public class ReleaseCandidateVersioning : VersioningStrategyBase
         var dynamicSuffix = 0;
         if (!string.IsNullOrWhiteSpace(versionInformation.DynamicSuffix))
             dynamicSuffix = int.Parse(versionInformation.DynamicSuffix, NumberStyles.Integer);
+        
+        var fixedSuffix = versionInformation.FixedSuffix;
+        if (string.IsNullOrWhiteSpace(fixedSuffix) && string.IsNullOrWhiteSpace(versionInformation.DynamicSuffix))
+            fixedSuffix = DefaultFixedSuffix;
 
         switch (versionBumpType)
         {
@@ -59,7 +66,7 @@ public class ReleaseCandidateVersioning : VersioningStrategyBase
                 versionInformation.CanonicalPart.Minor,
                 versionInformation.CanonicalPart.Build,
                 versionInformation.CanonicalPart.Revision),
-            FixedSuffix = versionInformation.FixedSuffix,
+            FixedSuffix = fixedSuffix,
             DynamicSuffix = dynamicSuffix.ToString("D", CultureInfo.InvariantCulture)
         };
     }

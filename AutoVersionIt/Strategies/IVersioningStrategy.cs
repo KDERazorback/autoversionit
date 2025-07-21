@@ -12,6 +12,11 @@ public interface IVersioningStrategy : IComparer<VersionInformation>
     /// </summary>
     public string Name { get; }
     /// <summary>
+    /// Default fixed suffix to be used when parsing version information.
+    /// This value is used when the fixed suffix is not provided in the version parsing.
+    /// </summary>
+    string DefaultFixedSuffix { get; }
+    /// <summary>
     /// Increments the version information based on the implemented strategy.
     /// </summary>
     /// <param name="versionInformation">
@@ -72,4 +77,20 @@ public interface IVersioningStrategy : IComparer<VersionInformation>
     /// A boolean value indicating whether the two version information objects are equal.
     /// </returns>
     public bool IsEqualTo(VersionInformation versionInformation, VersionInformation otherVersionInformation);
+
+    /// <summary>
+    /// Sets a default fixed suffix for version information and updates the current instance.
+    /// </summary>
+    /// <param name="fixedSuffix">The default fixed suffix to set. If the fixed suffix in version parsing is not provided, this value will be used.</param>
+    /// <returns>The current <see cref="IVersioningStrategy"/> instance with the specified default fixed suffix applied.</returns>
+    IVersioningStrategy WithDefaultFixedSuffix(string fixedSuffix);
+
+    /// <summary>
+    /// Configures the VersionReader to have no default fixed suffix.
+    /// This sets the DefaultFixedSuffix property to an empty string.
+    /// </summary>
+    /// <returns>
+    /// Returns the current IVersioningStrategy instance with the DefaultFixedSuffix property cleared.
+    /// </returns>
+    IVersioningStrategy NoDefaultFixedSuffix();
 }

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+
 namespace AutoVersionIt.Strategies;
 
 /// <summary>
@@ -12,6 +14,19 @@ public abstract class VersioningStrategyBase : IVersioningStrategy
     /// diagnostic purposes.
     /// </summary>
     public abstract string Name { get; }
+
+    /// <summary>
+    /// Default fixed suffix to be used when parsing version information.
+    /// This value is used when the fixed suffix is not provided in the version parsing.
+    /// </summary>
+    public string DefaultFixedSuffix { get; protected set; } = string.Empty;
+
+    protected VersioningStrategyBase(IConfiguration configuration)
+    {
+        var suffix = configuration.GetValue("suffix", string.Empty);
+        if (!string.IsNullOrWhiteSpace(suffix))
+            WithDefaultFixedSuffix(suffix.Trim());
+    }
     
     /// <summary>
     /// Increments the given version information to the next version based on the strategy's rules.
@@ -82,5 +97,29 @@ public abstract class VersioningStrategyBase : IVersioningStrategy
         if (IsLessThan(x, y)) return -1;
         if (IsGreaterThan(x, y)) return 1;
         return 0;
+    }
+    
+    /// <summary>
+    /// Sets a default fixed suffix for version information and updates the current instance.
+    /// </summary>
+    /// <param name="fixedSuffix">The default fixed suffix to set. If the fixed suffix in version parsing is not provided, this value will be used.</param>
+    /// <returns>The current <see cref="IVersioningStrategy"/> instance with the specified default fixed suffix applied.</returns>
+    public IVersioningStrategy WithDefaultFixedSuffix(string fixedSuffix)
+    {
+        DefaultFixedSuffix = fixedSuffix;
+        return this;
+    }
+
+    /// <summary>
+    /// Configures the VersionReader to have no default fixed suffix.
+    /// This sets the DefaultFixedSuffix property to an empty string.
+    /// </summary>
+    /// <returns>
+    /// Returns the current IVersioningStrategy instance with the DefaultFixedSuffix property cleared.
+    /// </returns>
+    public IVersioningStrategy NoDefaultFixedSuffix()
+    {
+        DefaultFixedSuffix = string.Empty;
+        return this;
     }
 }

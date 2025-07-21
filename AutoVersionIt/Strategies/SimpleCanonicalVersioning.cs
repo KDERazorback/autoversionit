@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+
 namespace AutoVersionIt.Strategies;
 
 /// <summary>
@@ -12,6 +14,8 @@ public class SimpleCanonicalVersioning : VersioningStrategyBase
     /// diagnostic purposes.
     /// </summary>
     public override string Name => "Canonical Versioning";
+    
+    public SimpleCanonicalVersioning(IConfiguration configuration) : base(configuration) { }
     
     /// <summary>
     /// Increments the version information based on the specified version bump type,

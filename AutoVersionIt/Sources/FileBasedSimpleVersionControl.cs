@@ -93,11 +93,25 @@ public class FileBasedSimpleVersionControl : IVersionSource, IVersionTarget
     /// </param>
     public void SetNewVersion(VersionInformation versionInformation)
     {
+        var canonicalVersion = versionInformation.AsFullCanonicalString();
+        var majorVersion = versionInformation.CanonicalPart.Major.ToString();
+        var minorVersion = versionInformation.CanonicalPart.Minor.ToString();
+        var buildVersion = versionInformation.CanonicalPart.Build.ToString();
+        var revisionVersion = versionInformation.CanonicalPart.Revision.ToString();
+        var suffixVersion = versionInformation.DynamicSuffix.Trim();
+        
         using FileStream fs = new FileStream(FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
         fs.SetLength(0);
         
         using StreamWriter writer = new StreamWriter(fs, Encoding.ASCII, leaveOpen: true);
         
         writer.WriteLine("Version = {0}", versionInformation);
+        writer.WriteLine("CanonicalVersion = {0}", canonicalVersion);
+        writer.WriteLine("VersionMajor = {0}", majorVersion);
+        writer.WriteLine("VersionMinor = {0}", minorVersion);
+        writer.WriteLine("VersionBuild = {0}", buildVersion);
+        writer.WriteLine("VersionRevision = {0}", revisionVersion);
+        if (!string.IsNullOrWhiteSpace(suffixVersion))
+            writer.WriteLine("VersionSuffix = {0}", suffixVersion);
     }
 }

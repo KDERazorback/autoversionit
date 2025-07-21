@@ -20,13 +20,6 @@ public class VersionReader
     public bool ShouldThrowIfEmpty { get; set; } = true;
 
     /// <summary>
-    /// Gets or sets the default fixed suffix used when no fixed suffix is specified
-    /// in the version string. This property provides a fallback value for the fixed suffix
-    /// part of the version, ensuring consistency when parsing or creating version information.
-    /// </summary>
-    public string DefaultFixedSuffix { get; set; } = string.Empty;
-
-    /// <summary>
     /// Converts a given version string into a <see cref="VersionInformation"/> object,
     /// parsing the canonical version parts and any optional suffixes.
     /// </summary>
@@ -102,30 +95,6 @@ public class VersionReader
     public VersionReader IgnoreEmpty()
     {
         ShouldThrowIfEmpty = false;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets a default fixed suffix for version information and updates the current instance.
-    /// </summary>
-    /// <param name="fixedSuffix">The default fixed suffix to set. If the fixed suffix in version parsing is not provided, this value will be used.</param>
-    /// <returns>The current <see cref="VersionReader"/> instance with the specified default fixed suffix applied.</returns>
-    public VersionReader WithDefaultFixedSuffix(string fixedSuffix)
-    {
-        DefaultFixedSuffix = fixedSuffix;
-        return this;
-    }
-
-    /// <summary>
-    /// Configures the VersionReader to have no default fixed suffix.
-    /// This sets the DefaultFixedSuffix property to an empty string.
-    /// </summary>
-    /// <returns>
-    /// Returns the current VersionReader instance with the DefaultFixedSuffix property cleared.
-    /// </returns>
-    public VersionReader NoDefaultFixedSuffix()
-    {
-        DefaultFixedSuffix = string.Empty;
         return this;
     }
 }

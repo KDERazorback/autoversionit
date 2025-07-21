@@ -75,34 +75,27 @@ To update your project's version information from the last tag in your repositor
   "bumpMethod": "revision"
 }
 ```
-- Save the following file as `autoversion.staging.json` in the root of your repository:
+- To use environment variables for the Development environment, use the following config file and save it as `autoversion.development.json` in the root of your repository:
 ```json
 {
-  "source": "git",
+  "source": "env",
   "targets": [
-    "git"
+    "env"
   ],
-  "strategy": "simple",
+  "strategy": "rc",
   "patch": [
     "netcore"
   ],
-  "bumpMethod": "build"
+  "bumpMethod": "suffix",
+  "versionEnvFile": ".env",
+  "versionEnv": "VERSION",
+  "suffix": "rc"
 }
 ```
-- Save the following file as `autoversion.production.json` in the root of your repository:
-```json
-{
-  "source": "git",
-  "targets": [
-    "git"
-  ],
-  "strategy": "simple",
-  "patch": [
-    "netcore"
-  ],
-  "bumpMethod": "minor"
-}
-```
+  - The new version information will be written to the `.env` file in the root of your repository. Make sure to source this file into the environment of your CI/CD pipeline after the tool runs.
+    ```bash
+    source .env
+    ```
 - Run the tool as `./autoversionit` from the root of your repository from your `Development` branch, and it will increase the revision number of your version by one
   each time the tool is run.
 - Set the environment variable `ENVIRONMENT` to `staging` and run the tool as usual to increase the build number of your version by one and reset the revision each time.
@@ -123,6 +116,7 @@ To update your project's version information from the last tag in your repositor
   - -build
   - -revision
   - -nobump
+- To set a custom-defined version number, you can set the `AUTOVERSIONIT_USE_VERSION` environment variable to the desired full version number and set the `AUTOVERSIONIT_VERSION_BUMP_METHOD` to `none`.
 
 ## Common Scenarios
 - Reading version from Git tags and applying to project files. Commiting the new version back to the repository.

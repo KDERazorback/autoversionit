@@ -31,19 +31,6 @@ public class VersionReaderTests
     }
     
     [Fact]
-    public Task ShouldRespectDefaultFixedSuffix()
-    {
-        // Arrange
-        var reader = new VersionReader().WithDefaultFixedSuffix("beta");
-        
-        // Act
-        var versionInfo = reader.FromString("1.2.3.4");
-        
-        // Assert
-        return Verify(versionInfo);
-    }
-    
-    [Fact]
     public void ShouldThrowWhenEmptyStringProvided()
     {
         // Arrange

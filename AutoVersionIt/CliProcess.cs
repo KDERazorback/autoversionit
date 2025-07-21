@@ -18,6 +18,7 @@ public class CliProcess
     protected IList<IVersionTarget> VersionTargetList { get; }
     protected IList<IVersionPatcher> VersionPatcherList { get; }
     protected IVersioningStrategy VersioningStrategy { get; }
+    protected VersionReader CurrentVersionReader { get; }
 
     public CliProcess(string[] args, IServiceProvider services)
     {
@@ -30,6 +31,7 @@ public class CliProcess
         VersionTargetList = services.GetServices<IVersionTarget>().ToList();
         VersionPatcherList = services.GetServices<IVersionPatcher>().ToList();
         VersioningStrategy = services.GetRequiredService<IVersioningStrategy>();
+        CurrentVersionReader = services.GetRequiredService<VersionReader>();
         
         Logger = LoggerFactory?.CreateLogger<CliProcess>();
     }
@@ -62,7 +64,7 @@ public class CliProcess
         var bumpMethod = GetVersionBumpMethod();
         Logger?.LogInformation("\t-->Version bump method: {bumpMethod}", bumpMethod);
         
-        var version = VersionSource.GetCurrentVersion();
+        var version = GetCurrentVersion();
         Logger?.LogInformation("Current version: {version}", version);
 
         var nextVersion = VersioningStrategy.Increment(version, bumpMethod);
@@ -92,7 +94,16 @@ public class CliProcess
         
         Logger?.LogInformation("AutoVersionIT CLI process completed.");
     }
-    
+
+    private VersionInformation GetCurrentVersion()
+    {
+        var envVersion = Environment.GetEnvironmentVariable("AUTOVERSIONIT_USE_VERSION");
+        if (!string.IsNullOrWhiteSpace(envVersion) && Enum.TryParse(envVersion, true, out VersionBumpType envResult))
+            return CurrentVersionReader.FromString(envVersion);
+        
+        return VersionSource.GetCurrentVersion();
+    }
+
     protected VersionBumpType GetVersionBumpMethod()
     {
         if (Arguments.Length > 0)
@@ -104,8 +115,8 @@ public class CliProcess
             if (Arguments.Contains("--nobump", StringComparer.OrdinalIgnoreCase)) return VersionBumpType.None;
         }
         
-        var envName = Environment.GetEnvironmentVariable("AUTOVERSIONIT_VERSION_BUMP_METHOD");
-        if (!string.IsNullOrWhiteSpace(envName) && Enum.TryParse(envName, true, out VersionBumpType envResult))
+        var envBumpMethod = Environment.GetEnvironmentVariable("AUTOVERSIONIT_VERSION_BUMP_METHOD");
+        if (!string.IsNullOrWhiteSpace(envBumpMethod) && Enum.TryParse(envBumpMethod, true, out VersionBumpType envResult))
             return envResult;
 
         if (Configuration is not null)
