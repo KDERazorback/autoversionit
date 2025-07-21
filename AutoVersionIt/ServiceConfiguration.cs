@@ -124,9 +124,10 @@ public static class ServiceConfiguration
     private static void AddConfigurations(IConfiguration configuration, IServiceCollection services)
     {
         var versionEnv = configuration.GetValue("versionEnv", "VERSION");
+        var versionEnvFile = configuration.GetValue("versionEnvFile", ".version");
         var versionFile = configuration.GetValue("versionFile", "version.txt");
         
-        services.AddSingleton(typeof(EnvironmentVariableVersionControlConfig), new EnvironmentVariableVersionControlConfig(versionEnv));
+        services.AddSingleton(typeof(EnvironmentVariableVersionControlConfig), new EnvironmentVariableVersionControlConfig(versionEnv, versionEnvFile));
         services.AddSingleton(typeof(FileBasedSimpleVersionControlConfig), new FileBasedSimpleVersionControlConfig(versionFile));
 
         services.AddSingleton(typeof(NetCoreVersionPatcherConfig), new NetCoreVersionPatcherConfig()

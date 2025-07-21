@@ -15,5 +15,6 @@
   "bumpMethod": "major|minor|build|revision|suffix",
   "versionFile": "version.txt",
   "versionEnv": "VERSION",
+  "versionEnvFile": ".version",
   "suffix": "rc"
 }

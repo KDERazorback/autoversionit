@@ -18,20 +18,20 @@ public class EnvironmentVariableVersionControlTests
     }
     
     [Fact]
-    public void Constructor_WithEmptyEnvironmentVarName_ThrowsArgumentNullException()
+    public void Constructor_WithEmptyEnvironmentVarFileName_ThrowsArgumentNullException()
     {
         // Arrange
         var reader = new VersionReader();
         
         // Act & Assert
-        Assert.Throws<ArgumentException>(() => new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(string.Empty), reader));
+        Assert.Throws<ArgumentException>(() => new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig("VERSION", string.Empty), reader));
     }
     
     [Fact]
     public void Constructor_WithNullReader_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(TestEnvVarName),null!));
+        Assert.Throws<ArgumentNullException>(() => new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(TestEnvVarName, ".env"),null!));
     }
     
     [Fact]
@@ -41,7 +41,7 @@ public class EnvironmentVariableVersionControlTests
         var reader = new VersionReader();
         
         // Act
-        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(TestEnvVarName), reader);
+        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(TestEnvVarName, ".env"), reader);
         
         // Assert
         Assert.Equal(TestEnvVarName, control.EnvironmentVariableName);
@@ -54,7 +54,7 @@ public class EnvironmentVariableVersionControlTests
         // Arrange
         var reader = new VersionReader();
         var uniqueEnvVar = $"{TestEnvVarName}_{Guid.NewGuid()}";
-        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar), reader);
+        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar, ".env"), reader);
         
         // Act
         var version = control.GetCurrentVersion();
@@ -75,7 +75,7 @@ public class EnvironmentVariableVersionControlTests
         var reader = new VersionReader();
         var uniqueEnvVar = $"{TestEnvVarName}_{Guid.NewGuid()}";
         Environment.SetEnvironmentVariable(uniqueEnvVar, "");
-        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar), reader);
+        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar, ".env"), reader);
         
         try
         {
@@ -104,7 +104,7 @@ public class EnvironmentVariableVersionControlTests
         var reader = new VersionReader();
         var uniqueEnvVar = $"{TestEnvVarName}_{Guid.NewGuid()}";
         Environment.SetEnvironmentVariable(uniqueEnvVar, "1.2.3.4");
-        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar), reader);
+        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar, ".env"), reader);
         
         try
         {
@@ -133,7 +133,7 @@ public class EnvironmentVariableVersionControlTests
         var reader = new VersionReader();
         var uniqueEnvVar = $"{TestEnvVarName}_{Guid.NewGuid()}";
         Environment.SetEnvironmentVariable(uniqueEnvVar, "2.3.4.5-beta");
-        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar), reader);
+        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar, ".env"), reader);
         
         try
         {
@@ -162,7 +162,7 @@ public class EnvironmentVariableVersionControlTests
         var reader = new VersionReader();
         var uniqueEnvVar = $"{TestEnvVarName}_{Guid.NewGuid()}";
         Environment.SetEnvironmentVariable(uniqueEnvVar, "3.4.5.6-alpha001");
-        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar), reader);
+        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar, ".env"), reader);
         
         try
         {
@@ -191,7 +191,7 @@ public class EnvironmentVariableVersionControlTests
         var reader = new VersionReader();
         var uniqueEnvVar = $"{TestEnvVarName}_{Guid.NewGuid()}";
         Environment.SetEnvironmentVariable(uniqueEnvVar, "  4.5.6.7-rc  ");
-        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar), reader);
+        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar, ".env"), reader);
         
         try
         {
@@ -220,7 +220,7 @@ public class EnvironmentVariableVersionControlTests
         var reader = new VersionReader();
         var uniqueEnvVar = $"{TestEnvVarName}_{Guid.NewGuid()}";
         Environment.SetEnvironmentVariable(uniqueEnvVar, "5.6.7.8 - preview");
-        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar), reader);
+        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar, ".env"), reader);
         
         try
         {
@@ -248,7 +248,7 @@ public class EnvironmentVariableVersionControlTests
         // Arrange
         var reader = new VersionReader();
         var uniqueEnvVar = $"{TestEnvVarName}_{Guid.NewGuid()}";
-        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar), reader);
+        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar, ".env"), reader);
         var version = new VersionInformation { CanonicalPart = new Version(6, 7, 8, 9) };
         
         try
@@ -273,7 +273,7 @@ public class EnvironmentVariableVersionControlTests
         // Arrange
         var reader = new VersionReader();
         var uniqueEnvVar = $"{TestEnvVarName}_{Guid.NewGuid()}";
-        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar), reader);
+        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar, ".env"), reader);
         var version = new VersionInformation 
         { 
             CanonicalPart = new Version(7, 8, 9, 0),
@@ -302,7 +302,7 @@ public class EnvironmentVariableVersionControlTests
         // Arrange
         var reader = new VersionReader();
         var uniqueEnvVar = $"{TestEnvVarName}_{Guid.NewGuid()}";
-        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar), reader);
+        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar, ".env"), reader);
         var version = new VersionInformation 
         { 
             CanonicalPart = new Version(8, 9, 0, 1),
@@ -332,7 +332,7 @@ public class EnvironmentVariableVersionControlTests
         // Arrange
         var reader = new VersionReader();
         var uniqueEnvVar = $"{TestEnvVarName}_{Guid.NewGuid()}";
-        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar), reader);
+        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar, ".env"), reader);
         var originalVersion = new VersionInformation 
         { 
             CanonicalPart = new Version(9, 8, 7, 6),
@@ -368,7 +368,7 @@ public class EnvironmentVariableVersionControlTests
         var reader = new VersionReader();
         var uniqueEnvVar = $"{TestEnvVarName}_{Guid.NewGuid()}";
         Environment.SetEnvironmentVariable(uniqueEnvVar, "1.0.0.0");
-        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar), reader);
+        var control = new EnvironmentVariableVersionControl(new EnvironmentVariableVersionControlConfig(uniqueEnvVar, ".env"), reader);
         var newVersion = new VersionInformation { CanonicalPart = new Version(2, 0, 0, 0) };
         
         try

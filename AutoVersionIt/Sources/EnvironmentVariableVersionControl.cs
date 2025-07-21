@@ -1,3 +1,4 @@
+using System.Text;
 using AutoVersionIt.Sources.Configuration;
 
 namespace AutoVersionIt.Sources;
@@ -24,6 +25,12 @@ public class EnvironmentVariableVersionControl : IVersionSource, IVersionTarget
     /// This property is immutable and initialized during the creation of the instance.
     /// </summary>
     public string EnvironmentVariableName => Config.EnvironmentVariableName;
+    
+    /// <summary>
+    /// Gets the name of the environment file used for storing version information.
+    /// This property is immutable and initialized during the creation of the instance.
+    /// </summary>
+    public string EnvironmentFileName => Config.EnvironmentFileName;
 
     /// <summary>
     /// Gets or initializes the VersionReader instance used for parsing and handling version strings.
@@ -38,7 +45,7 @@ public class EnvironmentVariableVersionControl : IVersionSource, IVersionTarget
     public EnvironmentVariableVersionControl(EnvironmentVariableVersionControlConfig config, VersionReader reader)
     {
         if (config is null) throw new ArgumentNullException(nameof(config));
-        if (string.IsNullOrWhiteSpace(config.EnvironmentVariableName)) throw new ArgumentException("Environment variable name cannot be null or empty.", nameof(config));
+        if (string.IsNullOrWhiteSpace(config.EnvironmentFileName)) throw new ArgumentException("Environment variable file name cannot be null or empty.", nameof(config));
         Config = config;
         VersionReader = reader ?? throw new ArgumentNullException(nameof(reader));
     }
@@ -85,12 +92,43 @@ public class EnvironmentVariableVersionControl : IVersionSource, IVersionTarget
     /// <param name="versionInformation">The version information to set in the environment variable.</param>
     public void SetNewVersion(VersionInformation versionInformation)
     {
-        Environment.SetEnvironmentVariable(EnvironmentVariableName, versionInformation.ToString());
-        Environment.SetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "CANONICAL"), versionInformation.AsFullCanonicalString());
-        Environment.SetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "MAJOR"), versionInformation.CanonicalPart.Major.ToString());
-        Environment.SetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "MINOR"), versionInformation.CanonicalPart.Minor.ToString());
-        Environment.SetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "BUILD"), versionInformation.CanonicalPart.Build.ToString());
-        Environment.SetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "REVISION"), versionInformation.CanonicalPart.Revision.ToString());
-        Environment.SetEnvironmentVariable(string.Format("{0}_{1}", EnvironmentVariableName, "SUFFIX"), versionInformation.DynamicSuffix.Trim());
+        var fullVersionString = versionInformation.ToString();
+        var canonicalVersion = versionInformation.AsFullCanonicalString();
+        var majorVersion = versionInformation.CanonicalPart.Major.ToString();
+        var minorVersion = versionInformation.CanonicalPart.Minor.ToString();
+        var buildVersion = versionInformation.CanonicalPart.Build.ToString();
+        var revisionVersion = versionInformation.CanonicalPart.Revision.ToString();
+        var suffixVersion = versionInformation.DynamicSuffix.Trim();
+        
+        var varCanonical = string.Format("{0}_{1}", EnvironmentVariableName, "CANONICAL");
+        var varMajor = string.Format("{0}_{1}", EnvironmentVariableName, "MAJOR");
+        var varMinor = string.Format("{0}_{1}", EnvironmentVariableName, "MINOR");
+        var varBuild = string.Format("{0}_{1}", EnvironmentVariableName, "BUILD");
+        var varRevision = string.Format("{0}_{1}", EnvironmentVariableName, "REVISION");
+        var varSuffix = string.Format("{0}_{1}", EnvironmentVariableName, "SUFFIX");
+
+        if (!string.IsNullOrWhiteSpace(EnvironmentVariableName))
+        {
+            Environment.SetEnvironmentVariable(EnvironmentVariableName, fullVersionString);
+            Environment.SetEnvironmentVariable(varCanonical, canonicalVersion);
+            Environment.SetEnvironmentVariable(varMajor, majorVersion);
+            Environment.SetEnvironmentVariable(varMinor, minorVersion);
+            Environment.SetEnvironmentVariable(varBuild, buildVersion);
+            Environment.SetEnvironmentVariable(varRevision, revisionVersion);
+            Environment.SetEnvironmentVariable(varSuffix, suffixVersion);
+        }
+        
+        File.AppendAllLines(EnvironmentFileName,
+            new[]
+            {
+                EnvironmentVariableName + "=" + fullVersionString,
+                varCanonical + "=" + canonicalVersion,
+                varMajor + "=" + majorVersion,
+                varMinor + "=" + minorVersion,
+                varBuild + "=" + buildVersion,
+                varRevision + "=" + revisionVersion,
+                varSuffix + "=" + suffixVersion
+            }
+        );
     }
 }
