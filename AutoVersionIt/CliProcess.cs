@@ -98,7 +98,7 @@ public class CliProcess
     private VersionInformation GetCurrentVersion()
     {
         var envVersion = Environment.GetEnvironmentVariable("AUTOVERSIONIT_USE_VERSION");
-        if (!string.IsNullOrWhiteSpace(envVersion) && Enum.TryParse(envVersion, true, out VersionBumpType envResult))
+        if (!string.IsNullOrWhiteSpace(envVersion))
             return CurrentVersionReader.FromString(envVersion);
         
         return VersionSource.GetCurrentVersion();
