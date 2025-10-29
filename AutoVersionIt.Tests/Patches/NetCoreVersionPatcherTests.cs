@@ -177,6 +177,101 @@ public class NetCoreVersionPatcherTests
     }
     
     [Fact]
+    public void PatchCSProjFile_UpdatesExistingVersionAttributes_MultiplePropertyGroups()
+    {
+        // Arrange
+        var testDir = PrepareTestDirectory();
+        var sampleFile = Path.Combine(testDir, "SampleProject.csproj");
+        
+        string csprojContent = @"<Project Sdk=""Microsoft.NET.Sdk"">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup>
+  </PropertyGroup>
+  <PropertyGroup>
+    <FileVersion>1.0.0.0</FileVersion>
+  </PropertyGroup>
+
+</Project>";
+
+        File.WriteAllText(sampleFile, csprojContent);
+        
+        var version = new VersionInformation 
+        { 
+            CanonicalPart = new Version(2, 1, 0, 0),
+            FixedSuffix = "beta",
+            DynamicSuffix = "1"
+        };
+        
+        var config = new NetCoreVersionPatcherConfig()
+            .WithCustomFilter("*.csproj");
+        var patcher = new NetCoreVersionPatcher(testDir, config);
+        
+        // Act
+        patcher.Patch(version);
+        
+        // Assert
+        string updatedContent = File.ReadAllText(sampleFile);
+        Assert.Contains("<AssemblyVersion>2.1.0.0</AssemblyVersion>", updatedContent);
+        Assert.Contains("<FileVersion>2.1.0.0</FileVersion>", updatedContent);
+        Assert.Contains("<AssemblyInformationalVersion>2.1.0.0-beta1</AssemblyInformationalVersion>", updatedContent);
+        Assert.DoesNotContain("<AssemblyVersion>1.0.0.0</AssemblyVersion>", updatedContent);
+        Assert.DoesNotContain("<FileVersion>1.0.0.0</FileVersion>", updatedContent);
+        Verify(updatedContent);
+        
+        // Cleanup
+        Directory.Delete(testDir, true);
+    }
+    
+        
+    [Fact]
+    public void PatchFile_WithMissingAttributes_InsertsNewAttributes_MultiplePropertyGroups()
+    {
+        // Arrange
+        var testDir = PrepareTestDirectory();
+        var sampleFile = Path.Combine(testDir, "SampleProject.csproj");
+        
+        string csprojContent = @"<Project Sdk=""Microsoft.NET.Sdk"">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup>
+  </PropertyGroup>
+
+</Project>";
+
+        File.WriteAllText(sampleFile, csprojContent);
+        
+        var version = new VersionInformation 
+        { 
+            CanonicalPart = new Version(4, 3, 2, 1)
+        };
+
+        var config = new NetCoreVersionPatcherConfig()
+            .WithCustomFilter("*.csproj")
+            .InsertAttributesIfMissing();
+        var patcher = new NetCoreVersionPatcher(testDir, config);
+        
+        // Act
+        patcher.Patch(version);
+        
+        // Assert
+        string updatedContent = File.ReadAllText(sampleFile);
+        Assert.Contains("<AssemblyVersion>4.3.2.1</AssemblyVersion>", updatedContent);
+        Assert.Contains("<FileVersion>4.3.2.1</FileVersion>", updatedContent);
+        
+        // Cleanup
+        Directory.Delete(testDir, true);
+    }
+    
+    [Fact]
     public void PatchFile_WithMissingAttributes_InsertsNewAttributes()
     {
         // Arrange

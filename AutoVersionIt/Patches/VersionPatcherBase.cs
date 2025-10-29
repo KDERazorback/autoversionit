@@ -113,37 +113,87 @@ public abstract class VersionPatcherBase : IVersionPatcher
         for (int i = 0; i < pathSegments.Length; i++)
         {
             var name = pathSegments[i];
-            var child = (from XmlNode x in node.ChildNodes
+            var children = (from XmlNode x in node.ChildNodes
                 where string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase)
-                select x).SingleOrDefault();
-            if (child is null)
+                select x).ToList();
+        
+            if (!children.Any())
             {
-                child = doc.CreateElement(string.Empty, name, node.NamespaceURI);
+                var child = doc.CreateElement(string.Empty, name, node.NamespaceURI);
                 node.AppendChild(child);
+                node = child;
+                continue;
             }
 
-            node = child;
-        }
+            if (children.Count == 1 || i == pathSegments.Length - 1)
+            {
+                node = children.First();
+                continue;
+            }
+
+            bool foundMatch = false;
+            foreach (var child in children)
+            {
+                var subNode = (from XmlNode x in child.ChildNodes
+                    where string.Equals(x.Name, pathSegments[i + 1], StringComparison.OrdinalIgnoreCase)
+                    select x).FirstOrDefault();
+
+                if (subNode is not null)
+                {
+                    node = child;
+                    foundMatch = true;
+                    break;
+                }
+            }
         
+            if (!foundMatch)
+                node = children.First();
+        }
+    
         node.InnerText = value;
     }
-    
+
     protected void UpdateXmlNodeIfExists(XmlDocument doc, string path, string value)
     {
         var pathSegments = path.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        XmlNode node = doc;
-        for (int i = 0; i < pathSegments.Length; i++)
+        XmlNode? node = doc;
+        for (int i = 0; i < pathSegments.Length && node is not null; i++)
         {
             var name = pathSegments[i];
-            var child = (from XmlNode x in node.ChildNodes
+            var children = (from XmlNode x in node.ChildNodes
                 where string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase)
-                select x).SingleOrDefault();
-            
-            if (child is null)
+                select x).ToList();
+
+            if (!children.Any())
                 return;
 
-            node = child;
+            if (children.Count == 1 || i == pathSegments.Length - 1)
+            {
+                node = children.First();
+                continue;
+            }
+
+            bool foundMatch = false;
+            foreach (var child in children)
+            {
+                var subNode = (from XmlNode x in child.ChildNodes
+                    where string.Equals(x.Name, pathSegments[i + 1], StringComparison.OrdinalIgnoreCase)
+                    select x).FirstOrDefault();
+
+                if (subNode is not null)
+                {
+                    node = child;
+                    foundMatch = true;
+                    break;
+                }
+            }
+        
+            if (!foundMatch)
+                node = children.First();
         }
+    
+        if (node is null) 
+            return;
         
         node.InnerText = value;
     }
